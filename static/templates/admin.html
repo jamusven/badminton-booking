@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ .Title }}</title>
+</head>
+<body style="background-color: white">
+<fieldset>
+    <legend>用户列表 (总场次：{{ $.VenueAmount }})</legend>
+    <table border="1px" cellpadding="5px" style="border:1px solid black;border-collapse:collapse; text-align: center;">
+        <tr>
+            <th>用户名</th>
+            <th>Lifecycle</th>
+            <th>Day7</th>
+            <th>Day14</th>
+            <th>Day30</th>
+            <th>最后活动时间</th>
+            <th>最早活动时间</th>
+            <th>手机号</th>
+            <th>状态</th>
+        </tr>
+        {{ range .Users }}
+        <tr>
+            <td>{{ .Name }}</td>
+            <td>
+                {{ index (index $.Stats .UID).ValueMap "ok" }}
+                ({{ index (index $.Stats .UID).ValueMap "okPercent" }})
+            </td>
+            <td>
+                {{ index (index $.Stats .UID).ValueMap "day7" }}
+            </td>
+            <td>
+                {{ index (index $.Stats .UID).ValueMap "day14" }}
+            </td>
+            <td>
+                {{ index (index $.Stats .UID).ValueMap "day30" }}
+            </td>
+            <td>
+                {{ (index $.Stats .UID).LastTime }} ({{ index (index $.Stats .UID).ValueMap "lastPast" }} days Ago)
+            </td>
+            <td>
+                {{ (index $.Stats .UID).FirstTime }} ({{ index (index $.Stats .UID).ValueMap "firstPast" }} days Ago)
+            </td>
+            <td>{{ .Mobile }}</td>
+            <td>{{ index $.UserStateMap .State }}</td>
+        </tr>
+        {{ end }}
+    </table>
+</fieldset>
+
+<fieldset>
+    <legend>添加用户</legend>
+    <form method="post" action="/admin/user/create">
+        用户名：<input type="text" name="name" placeholder="名字">
+        手机号：<input type="text" name="mobile" placeholder="手机号">
+        身份：
+        <select name="state">
+            {{ range $key, $value := $.UserStateMap }}
+            <option value="{{ $key }}">{{ $value }}</option>
+            {{ end }}
+        </select>
+        <input type="hidden" name="ticket" value="{{ .Ticket }}">
+        <input type="submit" value="添加">
+    </form>
+</fieldset>
+
+</body>
+</html>

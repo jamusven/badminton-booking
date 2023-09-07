@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ .Title }}</title>
+</head>
+<body style="background-color: white">
+<fieldset>
+    <legend>Login</legend>
+    <form method="post" action="/user/login">
+        姓名：<input type="text" name="name" placeholder="姓名">
+        手机：<input type="text" name="mobile" placeholder="手机号">
+
+        <input type="submit" value="登录">
+    </form>
+
+</fieldset>
+</body>
+</html>

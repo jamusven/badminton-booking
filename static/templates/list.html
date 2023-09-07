@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ .Title }} - {{ $.Me.Name }}</title>
+</head>
+<body style="background-color: white">
+{{ range .Venues }}
+<fieldset>
+    <legend>{{ .Name }} {{ .Day }} {{ getWeekDay .Day }} {{ .Desc }}</legend>
+    <div>
+        <form method="post" action="/venue/booking">
+            报名选择
+            <label>
+                <span style="color: red; font-weight: bold;">
+                {{- with index (index $.BookingSummaries .ID).AnswerValues $.Me.Name -}}
+                {{- index $.BookingStateMap . -}}
+                {{- else -}}
+                未选择
+                {{- end -}}
+                </span>
+
+                <select name="state">
+                    <option value="{{ $.BookingStateOK }}">{{ index $.BookingStateMap $.BookingStateOK }}</option>
+                    <option value="{{ $.BookingStateNO }}">{{ index $.BookingStateMap $.BookingStateNO }}</option>
+                    <option value="{{ $.BookingStateManual }}">{{ index $.BookingStateMap $.BookingStateManual }}</option>
+                </select>
+
+                <input type="hidden" name="venueId" value="{{ .ID }}">
+                <input type="hidden" name="ticket" value="{{ $.Ticket }}">
+
+                <input type="text" placeholder="外挂姓名 自己报名留空" name="worker">
+                <input type="submit" value="确认">
+            </label>
+        </form>
+    </div>
+
+    <p>
+        限制 : Min.{{ .Amount }} / Max.{{ .Limit }}
+
+    </p>
+
+    <p>
+        <form method="post" action="/venue/stat" style="display: inline" >
+            统计：{{ (index $.BookingSummaries .ID).AnswerCounter }}
+            <input type="hidden" name="venueId" value="{{ .ID }}">
+            <input type="hidden" name="ticket" value="{{ $.Ticket }}">
+            <input type="submit" value="统计通知">
+        </form>
+
+        <form method="post" action="/venue/depart" style="display: inline; ">
+            <input type="hidden" name="venueId" value="{{ .ID }}">
+            <input type="hidden" name="ticket" value="{{ $.Ticket }}">
+            <input type="submit" value="出发通知">
+        </form>
+    </p>
+
+    <p><a href="/logs/{{ sha1 (toString .ID) }}.log?_time={{ now }}">详情</a>：{{ (index $.BookingSummaries .ID).AnswerResponses }}</p>
+
+    {{ if or (eq $.UserStateAdmin ($.Me.State)) (eq .Owner ($.Me.UID))  }}
+    <form method="post" action="/venue/limit">
+        设置上限：
+        <input type="hidden" name="venueId" value="{{ .ID }}">
+        <input type="hidden" name="ticket" value="{{ $.Ticket }}">
+        <input type="text" size="3" name="amount" placeholder="最小人数" {{ if eq .Amount 0 }}value="" {{ else }}value="{{ .Amount }}"{{end}}>
+        <input type="text" size="3" name="limit" placeholder="最大人数" {{ if eq .Limit 0 }}value="" {{ else }}value="{{ .Limit }}"{{end}}>
+        场地信息：
+        <input type="text" name="desc" placeholder="场地信息" value="{{ .Desc }}">
+        场地名：
+        <input type="text" size="5" name="name" placeholder="场地名" value="{{ .Name }}">
+        日期：
+        <input type="text" size="10" name="day" placeholder="日期" value="{{ .Day }}">
+        <input type="submit" value="设置">
+    </form>
+
+    <form method="post" action="/venue/done">
+        结束场地：
+        <input type="hidden" name="venueId" value="{{ .ID }}">
+        <input type="hidden" name="ticket" value="{{ $.Ticket }}">
+        <input type="text" size="6" name="money" placeholder="金额">
+        <input type="submit" value="结束">
+    </form>
+    {{ end }}
+
+</fieldset>
+<hr>
+{{ end }}
+
+<div>
+    <form method="post" action="/venue/create">
+        <fieldset>
+            <legend> 创建场地 </legend>
+
+            <label>
+                <input type="text" placeholder="场地名称" name="name">
+                <input type="text" placeholder="场地日期 2023-08-10" name="day">
+                <input type="text" placeholder="场地信息 如: 12x2(3 4)" name="desc" value="">
+                <input type="hidden" name="ticket" value="{{ .Ticket }}">
+                <input type="submit" value="确认">
+            </label>
+        </fieldset>
+    </form>
+</div>
+</body>
+</html>
