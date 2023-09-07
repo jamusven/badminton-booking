@@ -17,7 +17,7 @@ func init() {
 	defer rows.Close()
 
 	if !rows.Next() {
-		if _, err := DBGet().Exec("CREATE TABLE IF NOT EXISTS venues (id INTEGER PRIMARY KEY, name TEXT, day TEXT, state INTEGER, amount INTEGER `limit` INTEGER, desc TEXT, owner INTEGER)"); err != nil {
+		if _, err := DBGet().Exec("CREATE TABLE IF NOT EXISTS venues (id INTEGER PRIMARY KEY, name TEXT, day TEXT, state INTEGER, amount INTEGER, `limit` INTEGER, desc TEXT, owner INTEGER)"); err != nil {
 			panic(err)
 		}
 
