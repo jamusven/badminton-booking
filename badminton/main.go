@@ -26,6 +26,7 @@ func main() {
 	templ := template.New("").Funcs(template.FuncMap{
 		"sha1":       misc.Sha1,
 		"toString":   misc.ToString,
+		"toJson":     misc.ToJson,
 		"getWeekDay": misc.GetWeekDay,
 		"now":        misc.Now,
 	})

@@ -125,7 +125,7 @@ func VenueFetchById(id int) *Venue {
 }
 
 func VenueFetchByState(state VenueState) ([]int, []*Venue) {
-	rows, err := DBGet().Query("SELECT id, name, day, state, amount, `limit`, desc, owner FROM venues WHERE state = ?", state)
+	rows, err := DBGet().Query("SELECT id, name, day, state, amount, `limit`, desc, owner FROM venues WHERE state = ? order by day asc", state)
 
 	if err != nil {
 		panic(err)

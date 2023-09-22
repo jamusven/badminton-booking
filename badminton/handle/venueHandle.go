@@ -107,7 +107,7 @@ func handleVenueBooking(c *gin.Context) {
 		return
 	}
 
-	venue.Log(user.GetName(worker), fmt.Sprintf("选择了 %s", data.BookingStateMap[state]), time.Now())
+	selectionDesc := venue.Log(user.GetName(worker), fmt.Sprintf("选择了 %s", data.BookingStateMap[state]), time.Now())
 
 	bookingSummary := data.BookingSummaryByVenueId(venueId)
 
@@ -153,10 +153,11 @@ func handleVenueBooking(c *gin.Context) {
 
 		if answerCounter[data.BookingStateMap[oldState]] <= venue.Amount && answerCounter[data.BookingStateMap[data.BookingStateAuto]] <= 0 {
 			state = data.BookingStateExiting
-
-			msg := venue.Log(user.GetName(worker), fmt.Sprintf("From %s To %s", data.BookingStateMap[data.BookingStateOK], data.BookingStateMap[data.BookingStateExiting]), time.Now())
-			go misc.LarkMarkdown(msg)
 		}
+
+		msg := venue.Log(user.GetName(worker), fmt.Sprintf("From %s To %s", data.BookingStateMap[data.BookingStateOK], data.BookingStateMap[state]), time.Now())
+
+		go misc.LarkMarkdown(msg)
 
 		if answerCounter[data.BookingStateMap[data.BookingStateAuto]] > 0 {
 			calculate = true
@@ -192,6 +193,8 @@ func handleVenueBooking(c *gin.Context) {
 
 		return
 	}
+
+	go misc.LarkMarkdown(selectionDesc)
 }
 
 func handleVenueLimit(c *gin.Context) {
@@ -292,7 +295,7 @@ func handleVenueDone(c *gin.Context) {
 		return
 	}
 
-	if venue.Amount == 0 && venue.Limit == 0 {
+	if money == 0 {
 		venue.State = data.VenueStateCancel
 
 		if err := data.VenueStateUpdate(venueId, data.VenueStateCancel); err != nil {

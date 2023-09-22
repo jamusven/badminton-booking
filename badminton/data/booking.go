@@ -296,7 +296,7 @@ func BookingStats() (int, map[int]*BookingStat) {
 	now := time.Now().Unix()
 	nowYmd := time.Now().Format(time.DateOnly)
 
-	rows, err := DBGet().Query(fmt.Sprintf("select user_id, sum(case when state = %d then 1 else 0 end) as ok, sum(case when state = %d and time > %d then 1 else 0 end) as day7, sum(case when state = %d and time > %d then 1 else 0 end) as day14, sum(case when state = %d and time > %d then 1 else 0 end) as day30, max(time) as lastTime, min(time) as firstTime from bookings where user_id > 0 and worker = '' group by user_id", BookingStateOK, BookingStateOK, now-7*86400, BookingStateOK, now-14*86400, BookingStateOK, now-30*86400))
+	rows, err := DBGet().Query(fmt.Sprintf("select user_id, sum(1), sum(case when state = %d then 1 else 0 end) as ok, sum(case when state = %d and time > %d then 1 else 0 end) as day7, sum(case when state = %d and time > %d then 1 else 0 end) as day14, sum(case when state = %d and time > %d then 1 else 0 end) as day30, max(time) as lastTime, min(time) as firstTime from bookings where user_id > 0 and worker = '' group by user_id", BookingStateOK, BookingStateOK, now-7*86400, BookingStateOK, now-14*86400, BookingStateOK, now-30*86400))
 
 	if err != nil {
 		panic(err)
@@ -305,9 +305,9 @@ func BookingStats() (int, map[int]*BookingStat) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var uid, ok, day7, day14, day30, lastTime, firstTime int
+		var uid, response, ok, day7, day14, day30, lastTime, firstTime int
 
-		if err := rows.Scan(&uid, &ok, &day7, &day14, &day30, &lastTime, &firstTime); err != nil {
+		if err := rows.Scan(&uid, &response, &ok, &day7, &day14, &day30, &lastTime, &firstTime); err != nil {
 			panic(err)
 		} else {
 			stat := userStats[uid]
@@ -315,6 +315,8 @@ func BookingStats() (int, map[int]*BookingStat) {
 			stat.LastTime = time.Unix(int64(lastTime), 0).Format(time.DateTime)
 
 			stat.ValueMap["ok"] = ok
+			stat.ValueMap["response"] = response
+			stat.ValueMap["responsePercent"] = fmt.Sprintf("%.2f%%", float32(response)/float32(venueAmount)*100)
 			stat.ValueMap["okPercent"] = fmt.Sprintf("%.2f%%", float32(ok)/float32(venueAmount)*100)
 			stat.ValueMap["day7"] = day7
 			stat.ValueMap["day14"] = day14

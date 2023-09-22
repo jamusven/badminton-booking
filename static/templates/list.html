@@ -3,6 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <title>{{ .Title }} - {{ $.Me.Name }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        fieldset {
+            margin: 1em;
+            border: 1px solid #888;
+            border-radius: 5px;
+            background-color: #fff;
+            width: 90%;
+            max-width: 600px;
+        }
+        legend {
+            padding: 0 1em;
+            color: #007BFF;
+            font-weight: bold;
+        }
+        form {
+            margin: 1em 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        form input, form select {
+            margin-bottom: 1em;
+        }
+
+        input[type="submit"] {
+            color: #fff;
+            background-color: #007BFF;
+            border: none;
+            border-radius: 3px;
+            padding: 0.5em 1em;
+            cursor: pointer;
+            align-self: flex-end;
+        }
+        input[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+        a {
+            color: #007BFF;
+        }
+        a:hover {
+            color: #0056b3;
+        }
+        @media (max-width: 600px) {
+            body {
+                font-size: 0.9em;
+            }
+            input[type="submit"] {
+                padding: 0.3em 0.6em;
+            }
+        }
+    </style>
 </head>
 <body style="background-color: white">
 {{ range .Venues }}
@@ -10,8 +71,8 @@
     <legend>{{ .Name }} {{ .Day }} {{ getWeekDay .Day }} {{ .Desc }}</legend>
     <div>
         <form method="post" action="/venue/booking">
-            报名选择
             <label>
+                报名选择
                 <span style="color: red; font-weight: bold;">
                 {{- with index (index $.BookingSummaries .ID).AnswerValues $.Me.Name -}}
                 {{- index $.BookingStateMap . -}}
@@ -29,7 +90,7 @@
                 <input type="hidden" name="venueId" value="{{ .ID }}">
                 <input type="hidden" name="ticket" value="{{ $.Ticket }}">
 
-                <input type="text" placeholder="外挂姓名 自己报名留空" name="worker">
+                <input type="text" placeholder="外挂姓名" size="8" name="worker">
                 <input type="submit" value="确认">
             </label>
         </form>
@@ -37,12 +98,18 @@
 
     <p>
         限制 : Min.{{ .Amount }} / Max.{{ .Limit }}
+    </p>
 
+    <p>
+        统计：{{ (index $.BookingSummaries .ID).AnswerCounter }}
+    </p>
+
+    <p>
+        <a href="/logs/{{ sha1 (toString .ID) }}.log?_time={{ now }}">详情</a>：{{ (index $.BookingSummaries .ID).AnswerResponses }}</p>
     </p>
 
     <p>
         <form method="post" action="/venue/stat" style="display: inline" >
-            统计：{{ (index $.BookingSummaries .ID).AnswerCounter }}
             <input type="hidden" name="venueId" value="{{ .ID }}">
             <input type="hidden" name="ticket" value="{{ $.Ticket }}">
             <input type="submit" value="统计通知">
@@ -55,11 +122,10 @@
         </form>
     </p>
 
-    <p><a href="/logs/{{ sha1 (toString .ID) }}.log?_time={{ now }}">详情</a>：{{ (index $.BookingSummaries .ID).AnswerResponses }}</p>
-
+    <p>
     {{ if or (eq $.UserStateAdmin ($.Me.State)) (eq .Owner ($.Me.UID))  }}
     <form method="post" action="/venue/limit">
-        设置上限：
+        设置上下限：
         <input type="hidden" name="venueId" value="{{ .ID }}">
         <input type="hidden" name="ticket" value="{{ $.Ticket }}">
         <input type="text" size="3" name="amount" placeholder="最小人数" {{ if eq .Amount 0 }}value="" {{ else }}value="{{ .Amount }}"{{end}}>
@@ -83,14 +149,12 @@
     {{ end }}
 
 </fieldset>
-<hr>
 {{ end }}
 
 <div>
     <form method="post" action="/venue/create">
         <fieldset>
             <legend> 创建场地 </legend>
-
             <label>
                 <input type="text" placeholder="场地名称" name="name">
                 <input type="text" placeholder="场地日期 2023-08-10" name="day">

@@ -39,7 +39,7 @@ func handleList(c *gin.Context) {
 
 	bookingSummaries := data.BookingSummaryByVenueIds(venueIds)
 
-	c.HTML(http.StatusOK, "list_1.0.html", gin.H{
+	c.HTML(http.StatusOK, "list.html", gin.H{
 		"Title":  title,
 		"Ticket": ticket,
 		"Me":     user,

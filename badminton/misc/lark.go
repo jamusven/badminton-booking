@@ -16,8 +16,8 @@ type LarkPost struct {
 }
 
 func LarkMarkdown(msg string) {
-	webhook := "https://open.feishu.cn/open-apis/bot/v2/hook/1" // sven
-	//webhook := "https://open.feishu.cn/open-apis/bot/v2/hook/2" // 羽林军
+	//webhook := "https://open.feishu.cn/open-apis/bot/v2/hook/" // self
+	webhook := "https://open.feishu.cn/open-apis/bot/v2/hook/" // 羽林军
 	post := LarkPost{
 		MsgType: "text",
 		Content: LarkText{

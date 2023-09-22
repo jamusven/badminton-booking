@@ -10,6 +10,7 @@
     <table border="1px" cellpadding="5px" style="border:1px solid black;border-collapse:collapse; text-align: center;">
         <tr>
             <th>用户名</th>
+            <th>Response</th>
             <th>Lifecycle</th>
             <th>Day7</th>
             <th>Day14</th>
@@ -22,6 +23,10 @@
         {{ range .Users }}
         <tr>
             <td>{{ .Name }}</td>
+            <td>
+                {{ index (index $.Stats .UID).ValueMap "response" }}
+                ({{ index (index $.Stats .UID).ValueMap "responsePercent" }})
+            </td>
             <td>
                 {{ index (index $.Stats .UID).ValueMap "ok" }}
                 ({{ index (index $.Stats .UID).ValueMap "okPercent" }})
