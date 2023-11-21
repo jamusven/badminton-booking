@@ -15,7 +15,7 @@ func init() {
 	defer rows.Close()
 
 	if !rows.Next() {
-		if _, err := DBGet().Exec("CREATE TABLE IF NOT EXISTS users (uid INTEGER PRIMARY KEY, name TEXT constraint users_name_unique unique, mobile TEXT, state INTEGER)"); err != nil {
+		if _, err := DBGet().Exec("CREATE TABLE IF NOT EXISTS users (uid INTEGER PRIMARY KEY, name TEXT constraint users_name_unique unique, mobile TEXT, state INTEGER, venue_fee REAL default 0, ball_fee REAL default 0, training_fee REAL default 0)"); err != nil {
 			panic(err)
 		}
 
@@ -28,10 +28,13 @@ func init() {
 }
 
 type User struct {
-	UID    int
-	Name   string
-	Mobile string
-	State  UserState
+	UID         int
+	Name        string
+	Mobile      string
+	State       UserState
+	VenueFee    float32
+	BallFee     float32
+	TrainingFee float32
 }
 
 func (this *User) saveCache() {
@@ -89,6 +92,12 @@ func UserCreate(name string, mobile string, state UserState) error {
 
 func UserUpdate(name string, mobile string, state UserState) error {
 	_, err := DBGet().Exec("UPDATE users SET mobile = ?, state = ? WHERE name = ?", mobile, state, name)
+
+	return err
+}
+
+func UserUpdateFee(name string, venueFee, ballFee, trainingFee float32) error {
+	_, err := DBGet().Exec("UPDATE users SET venue_fee = ?, ball_fee = ?, training_fee = ? WHERE name = ?", venueFee, ballFee, trainingFee, name)
 
 	return err
 }
@@ -180,7 +189,7 @@ func UserFetchAll() []*User {
 		return users
 	}
 
-	rows, err := DBGet().Query("SELECT uid, name, mobile, state FROM users")
+	rows, err := DBGet().Query("SELECT uid, name, mobile, state, venue_fee, ball_fee, training_fee FROM users")
 
 	if err != nil {
 		panic(err)
@@ -190,7 +199,7 @@ func UserFetchAll() []*User {
 
 	for rows.Next() {
 		user := &User{}
-		if err := rows.Scan(&user.UID, &user.Name, &user.Mobile, &user.State); err != nil {
+		if err := rows.Scan(&user.UID, &user.Name, &user.Mobile, &user.State, &user.VenueFee, &user.BallFee, &user.TrainingFee); err != nil {
 			panic(err)
 		}
 

@@ -50,6 +50,7 @@ func handleVenueCreate(c *gin.Context) {
 		msg := venue.Log(user.Name, "创建了场地", time.Now())
 
 		go misc.LarkMarkdown(msg)
+		go misc.Wechat(msg)
 		go misc.LarkMarkdown(fmt.Sprintf("create <at user_id=\"all\">everyone</at>"))
 	}
 
@@ -268,8 +269,8 @@ func handleVenueDone(c *gin.Context) {
 	ticket := c.PostForm("ticket")
 	_venueId := c.PostForm("venueId")
 	venueId := misc.ToINT(_venueId)
-	_money := c.PostForm("money")
-	money := misc.ToFloat32(_money)
+	venueFee := misc.ToFloat32(c.PostForm("venueFee"))
+	ballFee := misc.ToFloat32(c.PostForm("ballFee"))
 
 	if ticket == "" {
 		c.Status(http.StatusServiceUnavailable)
@@ -295,10 +296,10 @@ func handleVenueDone(c *gin.Context) {
 		return
 	}
 
-	if money == 0 {
+	if venueFee+ballFee == 0 {
 		venue.State = data.VenueStateCancel
 
-		if err := data.VenueStateUpdate(venueId, data.VenueStateCancel); err != nil {
+		if err := data.VenueStateUpdate(venueId, data.VenueStateCancel, 0, 0); err != nil {
 			panic(err)
 		} else {
 			if err := data.BookingDelByVenueId(venueId); err != nil {
@@ -313,15 +314,36 @@ func handleVenueDone(c *gin.Context) {
 		go misc.LarkMarkdown(msg)
 	} else {
 		venue.State = data.VenueStateDone
+		venue.Fee = venueFee
+		venue.BallFee = ballFee
 
-		if err := data.VenueStateUpdate(venueId, data.VenueStateDone); err != nil {
+		if err := data.VenueStateUpdate(venueId, data.VenueStateDone, venueFee, ballFee); err != nil {
 			panic(err)
 		}
 
 		bookingSummary := data.BookingSummaryByVenueId(venueId)
 
 		list := bookingSummary.AnswerResponses[data.BookingStateMap[data.BookingStateOK]]
-		msg := venue.Log(user.Name, fmt.Sprintf("场地已结束，人均约 %.2f 元. 人员：%s", money/float32(len(list)), strings.Join(list, ", ")), time.Now())
+
+		avgVenueFee := venueFee / float32(len(list))
+		avgBallFee := ballFee / float32(len(list))
+
+		msg := venue.Log(user.Name, fmt.Sprintf("场地已结束，人均约 %.2f 元. 人员：%s", avgVenueFee+ballFee, strings.Join(list, ", ")), time.Now())
+
+		for _, name := range list {
+			participant := data.UserFetchByName(name)
+
+			if participant == nil {
+				continue
+			}
+
+			participant.VenueFee += avgVenueFee
+			participant.BallFee += avgBallFee
+
+			if err := data.UserUpdateFee(name, participant.VenueFee, participant.BallFee, participant.TrainingFee); err != nil {
+				panic(err)
+			}
+		}
 
 		go misc.LarkMarkdown(msg)
 	}

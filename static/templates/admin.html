@@ -3,6 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <title>{{ .Title }}</title>
+    <style>
+        textarea {
+            width: 100%;
+            height: auto;
+            min-height: 300px;
+        }
+    </style>
 </head>
 <body style="background-color: white">
 <fieldset>
@@ -15,10 +22,14 @@
             <th>Day7</th>
             <th>Day14</th>
             <th>Day30</th>
-            <th>最后活动时间</th>
-            <th>最早活动时间</th>
+            <th>训练费</th>
+            <th>场地费</th>
+            <th>球费</th>
+            <th>最后响应时间</th>
+            <th>最早响应时间</th>
             <th>手机号</th>
             <th>状态</th>
+            <th>费用更新</th>
         </tr>
         {{ range .Users }}
         <tr>
@@ -41,6 +52,15 @@
                 {{ index (index $.Stats .UID).ValueMap "day30" }}
             </td>
             <td>
+                {{ printf "%.2f" .TrainingFee }}
+            </td>
+            <td>
+                {{ printf "%.2f" .VenueFee }}
+            </td>
+            <td>
+                {{ printf "%.2f" .BallFee }}
+            </td>
+            <td>
                 {{ (index $.Stats .UID).LastTime }} ({{ index (index $.Stats .UID).ValueMap "lastPast" }} days Ago)
             </td>
             <td>
@@ -48,6 +68,16 @@
             </td>
             <td>{{ .Mobile }}</td>
             <td>{{ index $.UserStateMap .State }}</td>
+            <td>
+                <form action="/admin/user/feeUpdate" method="post">
+                    <input type="hidden" name="uid" value="{{ .UID }}">
+                    <input type="hidden" name="ticket" value="{{ $.Ticket }}">
+                    <input type="text" name="venueFee" placeholder="场地费" size="3">
+                    <input type="text" name="ballFee" placeholder="球费" size="3">
+                    <input type="text" name="trainingFee" placeholder="训练费" size="3">
+                    <input type="submit" value="添加">
+                </form>
+            </td>
         </tr>
         {{ end }}
     </table>
@@ -66,6 +96,18 @@
         </select>
         <input type="hidden" name="ticket" value="{{ .Ticket }}">
         <input type="submit" value="添加">
+    </form>
+</fieldset>
+
+<fieldset>
+    <legend>配置更新</legend>
+    <form method="post" action="/admin/setting/update">
+        <label>
+            <textarea name="setting" >{{ .Settings }}</textarea>
+            <br />
+        </label>
+        <input type="hidden" name="ticket" value="{{ .Ticket }}">
+        <input type="submit" value="更新">
     </form>
 </fieldset>
 

@@ -129,7 +129,11 @@ func (this *BookingSummary) Adjust(venue *Venue) bool {
 				panic(err)
 			}
 
-			msg := venue.Log(UserFetchById(booking.UserID).GetName(booking.Worker), fmt.Sprintf("From %s To %s", BookingStateMap[BookingStateAuto], BookingStateMap[booking.State]), time.Now())
+			userName := UserFetchById(booking.UserID).GetName(booking.Worker)
+
+			msg := venue.Log(userName, fmt.Sprintf("From %s To %s", BookingStateMap[BookingStateAuto], BookingStateMap[booking.State]), time.Now())
+
+			go misc.WechatSingle(userName, msg)
 
 			details = append(details, msg)
 		}
@@ -152,7 +156,11 @@ func (this *BookingSummary) Adjust(venue *Venue) bool {
 				panic(err)
 			}
 
-			msg := venue.Log(UserFetchById(booking.UserID).GetName(booking.Worker), fmt.Sprintf("From %s To %s", BookingStateMap[BookingStateOK], BookingStateMap[booking.State]), time.Now())
+			userName := UserFetchById(booking.UserID).GetName(booking.Worker)
+
+			msg := venue.Log(userName, fmt.Sprintf("From %s To %s", BookingStateMap[BookingStateOK], BookingStateMap[booking.State]), time.Now())
+
+			go misc.WechatSingle(userName, msg)
 
 			details = append(details, msg)
 		}
@@ -173,7 +181,11 @@ func (this *BookingSummary) Adjust(venue *Venue) bool {
 				panic(err)
 			}
 
-			msg := venue.Log(UserFetchById(booking.UserID).GetName(booking.Worker), fmt.Sprintf("From %s To %s", BookingStateMap[BookingStateExiting], BookingStateMap[booking.State]), time.Now())
+			userName := UserFetchById(booking.UserID).GetName(booking.Worker)
+
+			msg := venue.Log(userName, fmt.Sprintf("From %s To %s", BookingStateMap[BookingStateExiting], BookingStateMap[booking.State]), time.Now())
+
+			go misc.WechatSingle(userName, msg)
 
 			details = append(details, msg)
 		}
@@ -262,11 +274,10 @@ func BookingSummaryByVenueId(id int) *BookingSummary {
 }
 
 type BookingStat struct {
-	UID           int
-	ValueMap      map[string]interface{}
-	Participation map[BookingState]string
-	FirstTime     string
-	LastTime      string
+	UID       int
+	ValueMap  map[string]interface{}
+	FirstTime string
+	LastTime  string
 }
 
 func BookingStats() (int, map[int]*BookingStat) {

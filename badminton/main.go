@@ -4,8 +4,10 @@ import (
 	"badminton-booking/badminton/data"
 	"badminton-booking/badminton/handle"
 	"badminton-booking/badminton/misc"
+	"badminton-booking/badminton/shard"
 	"badminton-booking/static"
 	"flag"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	_ "github.com/mattn/go-sqlite3"
 	"html/template"
@@ -55,5 +57,5 @@ func main() {
 
 	r.Static(data.LogDir, data.LogDir)
 
-	r.Run(":8099") // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
+	r.Run(fmt.Sprintf(":%d", shard.SettingInstance.Port))
 }

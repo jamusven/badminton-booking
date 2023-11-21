@@ -17,7 +17,7 @@ func init() {
 	defer rows.Close()
 
 	if !rows.Next() {
-		if _, err := DBGet().Exec("CREATE TABLE IF NOT EXISTS venues (id INTEGER PRIMARY KEY, name TEXT, day TEXT, state INTEGER, amount INTEGER, `limit` INTEGER, desc TEXT, owner INTEGER)"); err != nil {
+		if _, err := DBGet().Exec("CREATE TABLE IF NOT EXISTS venues (id INTEGER PRIMARY KEY, name TEXT, day TEXT, state INTEGER, amount INTEGER, `limit` INTEGER, desc TEXT, owner INTEGER, fee REAL DEFAULT 0, ball_fee REAL DEFAULT 0)"); err != nil {
 			panic(err)
 		}
 
@@ -32,14 +32,16 @@ func init() {
 }
 
 type Venue struct {
-	ID     int
-	Name   string
-	Day    string
-	State  VenueState
-	Amount int
-	Limit  int
-	Desc   string
-	Owner  int
+	ID      int
+	Name    string
+	Day     string
+	State   VenueState
+	Amount  int
+	Limit   int
+	Desc    string
+	Owner   int
+	Fee     float32
+	BallFee float32
 }
 
 const LogDir = "logs"
@@ -103,7 +105,7 @@ func VenueCreate(owner int, name string, day string, state VenueState, amount, l
 }
 
 func VenueFetchById(id int) *Venue {
-	rows, err := DBGet().Query("SELECT id, name, day, state, amount, `limit`, desc, owner FROM venues WHERE id = ?", id)
+	rows, err := DBGet().Query("SELECT id, name, day, state, amount, `limit`, desc, owner, fee, ball_fee FROM venues WHERE id = ?", id)
 
 	if err != nil {
 		panic(err)
@@ -117,7 +119,7 @@ func VenueFetchById(id int) *Venue {
 
 	venue := &Venue{}
 
-	if err := rows.Scan(&venue.ID, &venue.Name, &venue.Day, &venue.State, &venue.Amount, &venue.Limit, &venue.Desc, &venue.Owner); err != nil {
+	if err := rows.Scan(&venue.ID, &venue.Name, &venue.Day, &venue.State, &venue.Amount, &venue.Limit, &venue.Desc, &venue.Owner, &venue.Fee, &venue.BallFee); err != nil {
 		panic(err)
 	}
 
@@ -125,7 +127,7 @@ func VenueFetchById(id int) *Venue {
 }
 
 func VenueFetchByState(state VenueState) ([]int, []*Venue) {
-	rows, err := DBGet().Query("SELECT id, name, day, state, amount, `limit`, desc, owner FROM venues WHERE state = ? order by day asc", state)
+	rows, err := DBGet().Query("SELECT id, name, day, state, amount, `limit`, desc, owner, fee, ball_fee FROM venues WHERE state = ? order by day asc", state)
 
 	if err != nil {
 		panic(err)
@@ -138,7 +140,7 @@ func VenueFetchByState(state VenueState) ([]int, []*Venue) {
 	var venues []*Venue
 	for rows.Next() {
 		var venue Venue
-		if err := rows.Scan(&venue.ID, &venue.Name, &venue.Day, &venue.State, &venue.Amount, &venue.Limit, &venue.Desc, &venue.Owner); err != nil {
+		if err := rows.Scan(&venue.ID, &venue.Name, &venue.Day, &venue.State, &venue.Amount, &venue.Limit, &venue.Desc, &venue.Owner, &venue.Fee, &venue.BallFee); err != nil {
 			panic(err)
 		}
 
@@ -149,8 +151,8 @@ func VenueFetchByState(state VenueState) ([]int, []*Venue) {
 	return ids, venues
 }
 
-func VenueStateUpdate(id int, state VenueState) error {
-	if _, err := DBGet().Exec("update venues set state = ? where id = ?", state, id); err != nil {
+func VenueStateUpdate(id int, state VenueState, fee, ballFee float32) error {
+	if _, err := DBGet().Exec("update venues set state = ?, fee = ?, ball_fee = ? where id = ?", state, fee, ballFee, id); err != nil {
 		return err
 	}
 
