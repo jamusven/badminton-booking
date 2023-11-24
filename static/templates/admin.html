@@ -13,12 +13,13 @@
 </head>
 <body style="background-color: white">
 <fieldset>
-    <legend>用户列表 (总场次：{{ $.VenueAmount }})</legend>
+    <legend>用户列表</legend>
     <table border="1px" cellpadding="5px" style="border:1px solid black;border-collapse:collapse; text-align: center;">
         <tr>
             <th>用户名</th>
-            <th>Response</th>
-            <th>Lifecycle</th>
+            <th>场次</th>
+            <th>确认率</th>
+            <th>响应率</th>
             <th>Day7</th>
             <th>Day14</th>
             <th>Day30</th>
@@ -35,12 +36,15 @@
         <tr>
             <td>{{ .Name }}</td>
             <td>
-                {{ index (index $.Stats .UID).ValueMap "response" }}
-                ({{ index (index $.Stats .UID).ValueMap "responsePercent" }})
+                {{ index (index $.Stats .UID).ValueMap "venueAmount" }}
             </td>
             <td>
                 {{ index (index $.Stats .UID).ValueMap "ok" }}
                 ({{ index (index $.Stats .UID).ValueMap "okPercent" }})
+            </td>
+            <td>
+                {{ index (index $.Stats .UID).ValueMap "response" }}
+                ({{ index (index $.Stats .UID).ValueMap "responsePercent" }})
             </td>
             <td>
                 {{ index (index $.Stats .UID).ValueMap "day7" }}
@@ -72,9 +76,9 @@
                 <form action="/admin/user/feeUpdate" method="post">
                     <input type="hidden" name="uid" value="{{ .UID }}">
                     <input type="hidden" name="ticket" value="{{ $.Ticket }}">
-                    <input type="text" name="venueFee" placeholder="场地费" size="3">
-                    <input type="text" name="ballFee" placeholder="球费" size="3">
-                    <input type="text" name="trainingFee" placeholder="训练费" size="3">
+                    <input type="text" name="venueFee" placeholder="场地费" size="4">
+                    <input type="text" name="ballFee" placeholder="球费" size="4">
+                    <input type="text" name="trainingFee" placeholder="训练费" size="4">
                     <input type="submit" value="添加">
                 </form>
             </td>

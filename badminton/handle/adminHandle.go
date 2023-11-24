@@ -37,7 +37,7 @@ func handleAdmin(c *gin.Context) {
 		return
 	}
 
-	venueAmount, stats := data.BookingStats()
+	stats := data.BookingStats()
 
 	users := data.UserFetchAll()
 
@@ -70,9 +70,8 @@ func handleAdmin(c *gin.Context) {
 		"Title":  title,
 		"Ticket": ticket,
 
-		"VenueAmount": venueAmount,
-		"Users":       users,
-		"Stats":       stats,
+		"Users": users,
+		"Stats": stats,
 
 		"UserStateActive": data.UserStateActive,
 		"UserStateAdmin":  data.UserStateAdmin,
