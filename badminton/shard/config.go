@@ -6,10 +6,11 @@ import (
 )
 
 type Setting struct {
-	Port    int    `json:"port"`
-	Keyword string `json:"keyword"`
-	Lark    Lark   `json:"lark"`
-	Wechat  Wechat `json:"wechat"`
+	Port    int               `json:"port"`
+	Keyword string            `json:"keyword"`
+	Lark    Lark              `json:"lark"`
+	Wechat  Wechat            `json:"wechat"`
+	Stash   map[string]string `json:"stash"`
 }
 
 type Lark struct {

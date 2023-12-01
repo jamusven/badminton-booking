@@ -271,6 +271,7 @@ func handleVenueDone(c *gin.Context) {
 	venueId := misc.ToINT(_venueId)
 	venueFee := misc.ToFloat32(c.PostForm("venueFee"))
 	ballFee := misc.ToFloat32(c.PostForm("ballFee"))
+	trainingFee := misc.ToFloat32(c.PostForm("trainingFee"))
 
 	if ticket == "" {
 		c.Status(http.StatusServiceUnavailable)
@@ -296,10 +297,10 @@ func handleVenueDone(c *gin.Context) {
 		return
 	}
 
-	if venueFee+ballFee == 0 {
+	if venueFee+ballFee+trainingFee == 0 {
 		venue.State = data.VenueStateCancel
 
-		if err := data.VenueStateUpdate(venueId, data.VenueStateCancel, 0, 0); err != nil {
+		if err := data.VenueStateUpdate(venueId, data.VenueStateCancel, 0, 0, 0); err != nil {
 			panic(err)
 		} else {
 			if err := data.BookingDelByVenueId(venueId); err != nil {
@@ -316,17 +317,20 @@ func handleVenueDone(c *gin.Context) {
 		venue.State = data.VenueStateDone
 		venue.Fee = venueFee
 		venue.BallFee = ballFee
+		venue.TrainingFee = trainingFee
 
-		if err := data.VenueStateUpdate(venueId, data.VenueStateDone, venueFee, ballFee); err != nil {
+		if err := data.VenueStateUpdate(venueId, data.VenueStateDone, venueFee, ballFee, trainingFee); err != nil {
 			panic(err)
 		}
 
 		bookingSummary := data.BookingSummaryByVenueId(venueId)
 
 		list := bookingSummary.AnswerResponses[data.BookingStateMap[data.BookingStateOK]]
+		list = append(list, bookingSummary.AnswerResponses[data.BookingStateMap[data.BookingStateExiting]]...)
 
 		avgVenueFee := venueFee / float32(len(list))
 		avgBallFee := ballFee / float32(len(list))
+		avgTrainingFee := trainingFee / float32(len(list))
 
 		msg := venue.Log(user.Name, fmt.Sprintf("场地已结束，人均约 %.2f 元. 人员：%s", avgVenueFee+ballFee, strings.Join(list, ", ")), time.Now())
 
@@ -339,6 +343,7 @@ func handleVenueDone(c *gin.Context) {
 
 			participant.VenueFee += avgVenueFee
 			participant.BallFee += avgBallFee
+			participant.TrainingFee += avgTrainingFee
 
 			if err := data.UserUpdateFee(name, participant.VenueFee, participant.BallFee, participant.TrainingFee); err != nil {
 				panic(err)
@@ -387,6 +392,8 @@ func handleVenueDepart(c *gin.Context) {
 	} else {
 		list = append(list, "偶数出发")
 	}
+
+	list = append(list, fmt.Sprintf("%d人", bookingSummary.AnswerCounter[data.BookingStateMap[data.BookingStateOK]]))
 
 	msg := fmt.Sprintf("[%s %s %s %s] 出发通知 by [%s]\n\n名单：%s", venue.Name, venue.Day, misc.GetWeekDay(venue.Day), venue.Desc, user.Name, strings.Join(list, ", "))
 

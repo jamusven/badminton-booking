@@ -324,7 +324,7 @@ FROM
 	for rows.Next() {
 		var uid, venueAmount, response, ok, day7, day14, day30, lastTime, firstTime int
 
-		if err := rows.Scan(&uid, &venueAmount, &response, &ok, &day7, &day14, &day30, &lastTime, &firstTime); err != nil {
+		if err := rows.Scan(&uid, &venueAmount, &response, &ok, &day7, &day14, &day30, &firstTime, &lastTime); err != nil {
 			panic(err)
 		} else {
 			stat := userStats[uid]
