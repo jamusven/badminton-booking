@@ -13,7 +13,7 @@
 </head>
 <body style="background-color: white">
 <fieldset>
-    <legend>用户列表</legend>
+    <legend>用户列表 ( {{ .UserActiveAmt }}活跃 {{ .UserTotalAmt }}总数 {{ .UserZombieAmt }}僵尸 )</legend>
     <table border="1px" cellpadding="5px" style="border:1px solid black;border-collapse:collapse; text-align: center;">
         <tr>
             <th>用户名</th>
@@ -36,24 +36,24 @@
         <tr>
             <td>{{ .Name }}</td>
             <td>
-                {{ index (index $.Stats .UID).ValueMap "venueAmount" }}
+                {{ (index $.Stats .UID).VenueAmount }}
             </td>
             <td>
-                {{ index (index $.Stats .UID).ValueMap "ok" }}
-                ({{ index (index $.Stats .UID).ValueMap "okPercent" }})
+                {{ (index $.Stats .UID).ConfirmAmount }}
+                ({{ index (index $.Stats .UID).ValueMap "confirmPercent" }})
             </td>
             <td>
-                {{ index (index $.Stats .UID).ValueMap "response" }}
+                {{ (index $.Stats .UID).ResponseAmount }}
                 ({{ index (index $.Stats .UID).ValueMap "responsePercent" }})
             </td>
             <td>
-                {{ index (index $.Stats .UID).ValueMap "day7" }}
+                {{ (index $.Stats .UID).Day7 }}
             </td>
             <td>
-                {{ index (index $.Stats .UID).ValueMap "day14" }}
+                {{ (index $.Stats .UID).Day14 }}
             </td>
             <td>
-                {{ index (index $.Stats .UID).ValueMap "day30" }}
+                {{ (index $.Stats .UID).Day30 }}
             </td>
             <td>
                 {{ printf "%.2f" .TrainingFee }}
@@ -65,10 +65,10 @@
                 {{ printf "%.2f" .BallFee }}
             </td>
             <td>
-                {{ (index $.Stats .UID).LastTime }} ({{ index (index $.Stats .UID).ValueMap "lastPast" }} days Ago)
+                {{ index (index $.Stats .UID).ValueMap "lastTime" }} ({{ index (index $.Stats .UID).ValueMap "lastPast" }} days Ago)
             </td>
             <td>
-                {{ (index $.Stats .UID).FirstTime }} ({{ index (index $.Stats .UID).ValueMap "firstPast" }} days Ago)
+                {{ index (index $.Stats .UID).ValueMap "firstTime" }} ({{ index (index $.Stats .UID).ValueMap "firstPast" }} days Ago)
             </td>
             <td>{{ .Mobile }}</td>
             <td>{{ index $.UserStateMap .State }}</td>

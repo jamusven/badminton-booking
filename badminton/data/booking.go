@@ -274,13 +274,23 @@ func BookingSummaryByVenueId(id int) *BookingSummary {
 }
 
 type BookingStat struct {
-	UID       int
-	ValueMap  map[string]interface{}
-	FirstTime string
-	LastTime  string
+	UID             int
+	ValueMap        map[string]interface{}
+	FirstTime       int64
+	FirstAdjustTime int64
+	LastTime        int64
+	VenueAmount     int
+	Day7            int
+	Day14           int
+	Day30           int
+	ConfirmAmount   int
+	ResponseAmount  int
 }
 
 func BookingStats() map[int]*BookingStat {
+	now := time.Now().Unix()
+	nowYmd := time.Unix(now, 0).Format(time.DateOnly)
+
 	userStats := make(map[int]*BookingStat)
 
 	users := UserFetchAll()
@@ -289,31 +299,14 @@ func BookingStats() map[int]*BookingStat {
 		stat := &BookingStat{
 			ValueMap: make(map[string]interface{}),
 			UID:      user.UID,
-			LastTime: "",
 		}
-
-		stat.ValueMap["ok"] = 0
-		stat.ValueMap["okPercent"] = "0.00%"
 
 		userStats[user.UID] = stat
 	}
 
-	nowYmd := time.Now().Format(time.DateOnly)
+	venueDayMap := make(map[int]int64)
 
-	rows, err := DBGet().Query(`
-SELECT
-    users.uid,
-    (SELECT count(*) FROM venues where venues.state != 3 and venues.day >= (select strftime('%Y-%m-%d', min(time), 'unixepoch') FROM bookings where user_id = users.uid)) AS venueAmount,
-    (SELECT COUNT(*) FROM bookings WHERE user_id = users.uid and worker = '' ) AS response,
-    (SELECT COUNT(*) FROM bookings WHERE user_id = users.uid and worker = '' AND state = 1) AS ok,
-    (SELECT COUNT(*) FROM bookings WHERE user_id = users.uid and worker = '' AND state = 1 AND time >= strftime('%s', 'now', '-7 days')) AS day7,
-    (SELECT COUNT(*) FROM bookings WHERE user_id = users.uid and worker = '' AND state = 1 AND time >= strftime('%s', 'now', '-14 days')) AS day14,
-    (SELECT COUNT(*) FROM bookings WHERE user_id = users.uid and worker = '' AND state = 1 AND time >= strftime('%s', 'now', '-30 days')) AS day30,
-     (select min(time) FROM bookings where user_id = users.uid) as firstTime,
-    (select max(time) FROM bookings where user_id = users.uid) as lastTime
-FROM
-    users;
-`)
+	rows, err := DBGet().Query(fmt.Sprintf("select `id`, `day` from venues where state != %d", VenueStateCancel))
 
 	if err != nil {
 		panic(err)
@@ -322,26 +315,96 @@ FROM
 	defer rows.Close()
 
 	for rows.Next() {
-		var uid, venueAmount, response, ok, day7, day14, day30, lastTime, firstTime int
+		var id int
+		var day string
 
-		if err := rows.Scan(&uid, &venueAmount, &response, &ok, &day7, &day14, &day30, &firstTime, &lastTime); err != nil {
+		if err := rows.Scan(&id, &day); err != nil {
 			panic(err)
 		} else {
-			stat := userStats[uid]
-			stat.FirstTime = time.Unix(int64(firstTime), 0).Format(time.DateTime)
-			stat.LastTime = time.Unix(int64(lastTime), 0).Format(time.DateTime)
+			dayTime, _ := time.Parse(time.DateOnly, day)
 
-			stat.ValueMap["ok"] = ok
-			stat.ValueMap["venueAmount"] = venueAmount
-			stat.ValueMap["response"] = response
-			stat.ValueMap["responsePercent"] = fmt.Sprintf("%.2f%%", float32(response)/float32(venueAmount)*100)
-			stat.ValueMap["okPercent"] = fmt.Sprintf("%.2f%%", float32(ok)/float32(venueAmount)*100)
-			stat.ValueMap["day7"] = day7
-			stat.ValueMap["day14"] = day14
-			stat.ValueMap["day30"] = day30
-			stat.ValueMap["firstPast"] = misc.DiffDayByLabel(nowYmd, stat.FirstTime)
-			stat.ValueMap["lastPast"] = misc.DiffDayByLabel(nowYmd, stat.LastTime)
+			venueDayMap[id] = dayTime.Unix()
 		}
+	}
+
+	rows, err = DBGet().Query(fmt.Sprintf("select `venue_id`, `user_id`, `state`, `time` from bookings where worker = ''"))
+
+	for rows.Next() {
+		var venueId, userId, state int
+		var bookingTime int64
+
+		if err := rows.Scan(&venueId, &userId, &state, &bookingTime); err != nil {
+			panic(err)
+		} else {
+			var ok bool
+			var venueTime int64
+
+			if venueTime, ok = venueDayMap[venueId]; !ok {
+				continue
+			}
+
+			var stat *BookingStat
+
+			if stat, ok = userStats[userId]; !ok {
+				continue
+			}
+
+			adjustBookingTime := bookingTime
+
+			if adjustBookingTime < venueTime {
+				adjustBookingTime = venueTime
+			}
+
+			stat.ResponseAmount++
+
+			if state == int(BookingStateOK) {
+				stat.ConfirmAmount++
+
+				if now-adjustBookingTime <= 86400*7 {
+					stat.Day7++
+					stat.Day14++
+					stat.Day30++
+				} else if now-adjustBookingTime <= 86400*14 {
+					stat.Day14++
+					stat.Day30++
+				} else if now-adjustBookingTime <= 86400*30 {
+					stat.Day30++
+				}
+			}
+
+			if stat.FirstTime == 0 || stat.FirstAdjustTime > adjustBookingTime {
+				stat.FirstTime = bookingTime
+				stat.FirstAdjustTime = adjustBookingTime
+			}
+
+			if stat.LastTime == 0 || stat.LastTime < bookingTime {
+				stat.LastTime = bookingTime
+			}
+		}
+	}
+
+	for _, user := range users {
+		stat, _ := userStats[user.UID]
+
+		for _, venueDayTime := range venueDayMap {
+			if user.UID == 1 {
+
+				fmt.Printf("name: %s, venueDayTime: %s, stat.FirstAdjustTime: %s\n", user.Name, time.Unix(venueDayTime, 0).Format(time.DateTime), time.Unix(stat.FirstAdjustTime, 0).Format(time.DateTime))
+			}
+
+			if venueDayTime >= stat.FirstAdjustTime {
+				stat.VenueAmount++
+			}
+		}
+
+		stat.ValueMap["confirmPercent"] = fmt.Sprintf("%.2f%%", float32(stat.ConfirmAmount)/float32(stat.VenueAmount)*100)
+		stat.ValueMap["responsePercent"] = fmt.Sprintf("%.2f%%", float32(stat.ResponseAmount)/float32(stat.VenueAmount)*100)
+
+		stat.ValueMap["firstTime"] = time.Unix(stat.FirstTime, 0).Format(time.DateTime)
+		stat.ValueMap["lastTime"] = time.Unix(stat.LastTime, 0).Format(time.DateTime)
+
+		stat.ValueMap["firstPast"] = misc.DiffDayByLabel(nowYmd, time.Unix(stat.FirstTime, 0).Format(time.DateTime))
+		stat.ValueMap["lastPast"] = misc.DiffDayByLabel(nowYmd, time.Unix(stat.LastTime, 0).Format(time.DateTime))
 	}
 
 	return userStats

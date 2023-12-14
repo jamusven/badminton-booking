@@ -41,34 +41,48 @@ func handleAdmin(c *gin.Context) {
 
 	users := data.UserFetchAll()
 
+	userTotalAmt := 0
+	userActiveAmt := 0
+	userZombieAmt := 0
+
+	for _, user := range users {
+		userTotalAmt++
+
+		if user.State == data.UserStateZombie {
+			userZombieAmt++
+		} else {
+			userActiveAmt++
+		}
+	}
+
 	sort.Slice(users, func(i, j int) bool {
-		var iInterDay30, jInterDay30 interface{}
-		var iDay30, jDay30 int
-		var ok bool
+		iUser := users[i]
+		jUser := users[j]
+		iStat := stats[iUser.UID]
+		jStat := stats[jUser.UID]
 
-		if iInterDay30, ok = stats[users[i].UID].ValueMap["day30"]; ok {
-			iDay30 = iInterDay30.(int)
+		if iStat.Day30 != jStat.Day30 {
+			return iStat.Day30 > jStat.Day30
 		}
 
-		if jInterDay30, ok = stats[users[j].UID].ValueMap["day30"]; ok {
-			jDay30 = jInterDay30.(int)
+		if iStat.Day14 != jStat.Day14 {
+			return iStat.Day14 > jStat.Day14
 		}
 
-		if iDay30 == jDay30 {
-			iDay30 = (stats[users[i].UID].ValueMap["ok"]).(int)
-			jDay30 = (stats[users[j].UID].ValueMap["ok"]).(int)
+		if iStat.Day7 != jStat.Day7 {
+			return iStat.Day7 > jStat.Day7
 		}
 
-		if iDay30 == jDay30 {
-			return users[i].TrainingFee+users[i].BallFee+users[i].VenueFee > users[j].TrainingFee+users[j].BallFee+users[j].VenueFee
-		}
-
-		return iDay30 > jDay30
+		return iUser.TrainingFee+iUser.BallFee+iUser.VenueFee > jUser.TrainingFee+jUser.BallFee+jUser.VenueFee
 	})
 
 	c.HTML(http.StatusOK, "admin.html", gin.H{
 		"Title":  title,
 		"Ticket": ticket,
+
+		"UserTotalAmt":  userTotalAmt,
+		"UserActiveAmt": userActiveAmt,
+		"UserZombieAmt": userZombieAmt,
 
 		"Users": users,
 		"Stats": stats,
