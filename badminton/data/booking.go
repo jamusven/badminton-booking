@@ -360,16 +360,19 @@ func BookingStats() map[int]*BookingStat {
 			if state == int(BookingStateOK) {
 				stat.ConfirmAmount++
 
-				if now-adjustBookingTime <= 86400*7 {
-					stat.Day7++
-					stat.Day14++
-					stat.Day30++
-				} else if now-adjustBookingTime <= 86400*14 {
-					stat.Day14++
-					stat.Day30++
-				} else if now-adjustBookingTime <= 86400*30 {
-					stat.Day30++
+				if now >= venueTime {
+					if now-adjustBookingTime <= 86400*7 {
+						stat.Day7++
+						stat.Day14++
+						stat.Day30++
+					} else if now-adjustBookingTime <= 86400*14 {
+						stat.Day14++
+						stat.Day30++
+					} else if now-adjustBookingTime <= 86400*30 {
+						stat.Day30++
+					}
 				}
+
 			}
 
 			if stat.FirstTime == 0 || stat.FirstAdjustTime > adjustBookingTime {
