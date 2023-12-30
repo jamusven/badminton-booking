@@ -26,11 +26,12 @@ func main() {
 	r := handle.RouterGet()
 
 	templ := template.New("").Funcs(template.FuncMap{
-		"sha1":       misc.Sha1,
-		"toString":   misc.ToString,
-		"toJson":     misc.ToJson,
-		"getWeekDay": misc.GetWeekDay,
-		"now":        misc.Now,
+		"sha1":          misc.Sha1,
+		"toString":      misc.ToString,
+		"toIntFromUint": misc.ToIntFromUint,
+		"toJson":        misc.ToJson,
+		"getWeekDay":    misc.GetWeekDay,
+		"now":           misc.Now,
 	})
 
 	if *debug {

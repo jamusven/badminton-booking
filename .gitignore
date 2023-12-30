@@ -1,5 +1,7 @@
 .idea
 /badminton/go_build_badminton_booking_badminton
 /badminton/badminton.exe
+/badminton/badminton.linux
 /badminton/database.db
+/badminton/logs/database1.db
 /badminton/logs/

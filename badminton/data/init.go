@@ -1,7 +1,8 @@
 package data
 
 import (
-	"database/sql"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 	"sync"
 )
 
@@ -10,18 +11,18 @@ const GodTicket = "sven666"
 
 var Locker = &sync.Mutex{}
 
-var db *sql.DB
+var db *gorm.DB
 
-func DBGet() *sql.DB {
+func DBGet() *gorm.DB {
 	if db != nil {
 		return db
 	}
 
 	var err error
 
-	if db, err = sql.Open("sqlite3", dataBaseFile); err != nil {
-		panic(err)
+	db, err = gorm.Open(sqlite.Open(dataBaseFile), &gorm.Config{})
+	if err != nil {
+		panic("failed to connect database")
 	}
-
 	return db
 }

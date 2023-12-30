@@ -3,8 +3,11 @@ package handle
 import (
 	"badminton-booking/badminton/data"
 	"badminton-booking/badminton/misc"
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"net/http"
 	"strings"
 	"time"
@@ -42,17 +45,26 @@ func handleVenueCreate(c *gin.Context) {
 	day := c.PostForm("day")
 	desc := c.PostForm("desc")
 
-	if id, err := data.VenueCreate(user.UID, name, day, data.VenueStateRunning, 0, 0, desc); err != nil {
-		c.String(http.StatusOK, fmt.Sprintf("create venue failed: %s", err.Error()))
-		return
-	} else {
-		venue := data.VenueFetchById(id)
-		msg := venue.Log(user.Name, "创建了场地", time.Now())
-
-		go misc.LarkMarkdown(msg)
-		go misc.Wechat(msg)
-		go misc.LarkMarkdown(fmt.Sprintf("create <at user_id=\"all\">everyone</at>"))
+	venue := &data.Venue{
+		Owner: user.ID,
+		Name:  name,
+		Day:   day,
+		Desc:  desc,
+		State: data.VenueStateRunning,
 	}
+
+	tx := data.DBGet().Create(venue)
+
+	if tx.Error != nil {
+		c.String(http.StatusOK, fmt.Sprintf("create venue failed: %s", tx.Error.Error()))
+		return
+	}
+
+	msg := venue.Log(user.Name, "创建了场地", time.Now())
+
+	go misc.LarkMarkdown(msg)
+	go misc.Wechat(msg)
+	go misc.LarkMarkdown(fmt.Sprintf("create <at user_id=\"all\">everyone</at>"))
 
 	c.Redirect(http.StatusMovedPermanently, c.Request.Referer())
 }
@@ -63,7 +75,7 @@ func handleVenueBooking(c *gin.Context) {
 
 	ticket := c.PostForm("ticket")
 	_venueId := c.PostForm("venueId")
-	venueId := misc.ToINT(_venueId)
+	venueId := uint(misc.ToINT(_venueId))
 	worker := c.PostForm("worker")
 	_state := c.PostForm("state")
 	state := data.BookingState(misc.ToINT(_state))
@@ -75,8 +87,19 @@ func handleVenueBooking(c *gin.Context) {
 
 	defer func() {
 		if changed && user != nil {
-			if err := data.BookingCreate(user.UID, venueId, state, time.Now().Unix(), worker); err != nil {
-				c.String(http.StatusOK, fmt.Sprintf("create booking failed: %s", err.Error()))
+			tx := data.DBGet().Clauses(clause.OnConflict{
+				Columns:   []clause.Column{{Name: "venue_id"}, {Name: "user_id"}, {Name: "worker"}},
+				UpdateAll: true,
+			}).Create(&data.Booking{
+				VenueID: venueId,
+				UserID:  user.ID,
+				Worker:  worker,
+				State:   state,
+				Time:    time.Now().Unix(),
+			})
+
+			if tx.Error != nil {
+				c.String(http.StatusOK, fmt.Sprintf("create booking failed: %s", tx.Error.Error()))
 				return
 			}
 
@@ -127,7 +150,7 @@ func handleVenueBooking(c *gin.Context) {
 		list = append(list, user.GetName(worker), "4的倍数")
 
 		msg := fmt.Sprintf("[%s %s %s %s] 报名通知 by [%s]\n\n名单：%s", venue.Name, venue.Day, misc.GetWeekDay(venue.Day), venue.Desc, user.Name, strings.Join(list, ", "))
-		go misc.LarkMarkdown(msg)
+		go misc.LarkMarkdownChan(msg)
 	}
 
 	if venue.Amount == 0 && venue.Limit == 0 {
@@ -204,7 +227,7 @@ func handleVenueLimit(c *gin.Context) {
 
 	ticket := c.PostForm("ticket")
 	_venueId := c.PostForm("venueId")
-	venueId := misc.ToINT(_venueId)
+	venueId := uint(misc.ToINT(_venueId))
 	_amount := c.PostForm("amount")
 	amount := misc.ToINT(_amount)
 	_limit := c.PostForm("limit")
@@ -232,27 +255,30 @@ func handleVenueLimit(c *gin.Context) {
 		return
 	}
 
-	if user.State != data.UserStateAdmin && user.UID != venue.Owner {
+	if user.State != data.UserStateAdmin && user.ID != venue.Owner {
 		c.Status(http.StatusServiceUnavailable)
 		return
 	}
 
-	if err := data.VenueUpdateDetail(venueId, amount, limit, name, day, desc); err != nil {
-		c.String(http.StatusOK, fmt.Sprintf("update venue limit failed: %s", err.Error()))
+	adjust := venue.Amount != amount || venue.Limit != limit
+
+	tx := data.DBGet().Model(venue).Updates(map[string]interface{}{
+		"name":   name,
+		"day":    day,
+		"desc":   desc,
+		"limit":  limit,
+		"amount": amount,
+	})
+
+	if tx.Error != nil {
+		c.String(http.StatusOK, fmt.Sprintf("update venue limit failed: %s", tx.Error.Error()))
 		return
 	}
 
-	venue.Name = name
-	venue.Desc = desc
-	venue.Day = day
-
 	msg := venue.Log(user.Name, fmt.Sprintf("更新了场地信息 limit(%d/%d) desc(%s)", amount, limit, desc), time.Now())
 
-	if venue.Amount != amount || venue.Limit != limit {
+	if adjust {
 		go misc.LarkMarkdown(msg)
-
-		venue.Amount = amount
-		venue.Limit = limit
 
 		bookingSummary := data.BookingSummaryByVenueId(venueId)
 		bookingSummary.Adjust(venue)
@@ -268,7 +294,7 @@ func handleVenueDone(c *gin.Context) {
 
 	ticket := c.PostForm("ticket")
 	_venueId := c.PostForm("venueId")
-	venueId := misc.ToINT(_venueId)
+	venueId := uint(misc.ToINT(_venueId))
 	venueFee := misc.ToFloat32(c.PostForm("venueFee"))
 	ballFee := misc.ToFloat32(c.PostForm("ballFee"))
 	trainingFee := misc.ToFloat32(c.PostForm("trainingFee"))
@@ -292,7 +318,7 @@ func handleVenueDone(c *gin.Context) {
 		return
 	}
 
-	if user.State != data.UserStateAdmin && user.UID != venue.Owner {
+	if user.State != data.UserStateAdmin && user.ID != venue.Owner {
 		c.Status(http.StatusServiceUnavailable)
 		return
 	}
@@ -300,12 +326,16 @@ func handleVenueDone(c *gin.Context) {
 	if venueFee+ballFee+trainingFee == 0 {
 		venue.State = data.VenueStateCancel
 
-		if err := data.VenueStateUpdate(venueId, data.VenueStateCancel, 0, 0, 0); err != nil {
-			panic(err)
-		} else {
-			if err := data.BookingDelByVenueId(venueId); err != nil {
-				panic(err)
-			}
+		tx := data.DBGet().Updates(venue)
+
+		if tx.Error != nil && errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			panic(tx.Error)
+		}
+
+		tx = data.DBGet().Where("venue_id = ?", venue.ID).Delete(&data.Booking{})
+
+		if tx.Error != nil && errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			panic(tx.Error)
 		}
 
 		msg := venue.Log(user.Name, fmt.Sprintf("场地已取消"), time.Now())
@@ -319,8 +349,10 @@ func handleVenueDone(c *gin.Context) {
 		venue.BallFee = ballFee
 		venue.TrainingFee = trainingFee
 
-		if err := data.VenueStateUpdate(venueId, data.VenueStateDone, venueFee, ballFee, trainingFee); err != nil {
-			panic(err)
+		tx := data.DBGet().Updates(venue)
+
+		if tx.Error != nil {
+			panic(tx.Error)
 		}
 
 		bookingSummary := data.BookingSummaryByVenueId(venueId)
@@ -334,19 +366,43 @@ func handleVenueDone(c *gin.Context) {
 
 		msg := venue.Log(user.Name, fmt.Sprintf("场地已结束，人均约 %.2f 元. 人员：%s", avgVenueFee+ballFee, strings.Join(list, ", ")), time.Now())
 
+		label := venue.GetLabel()
+
 		for _, name := range list {
 			participant := data.UserFetchByName(name)
 
 			if participant == nil {
+				go misc.LarkMarkdownChan(fmt.Sprintf("用户 %s 不存在需要单独缴费 %.2f", name, avgVenueFee+avgBallFee+avgTrainingFee))
+
 				continue
 			}
 
-			participant.VenueFee += avgVenueFee
-			participant.BallFee += avgBallFee
-			participant.TrainingFee += avgTrainingFee
+			tx := data.DBGet().Model(participant).Updates(map[string]interface{}{
+				"venue_fee":    participant.VenueFee + avgVenueFee,
+				"ball_fee":     participant.BallFee + avgBallFee,
+				"training_fee": participant.TrainingFee + avgTrainingFee,
+				"balance":      participant.Balance - avgVenueFee,
+			})
 
-			if err := data.UserUpdateFee(name, participant.VenueFee, participant.BallFee, participant.TrainingFee); err != nil {
-				panic(err)
+			if tx.Error != nil {
+				panic(tx.Error)
+			}
+
+			if avgVenueFee > 0 {
+				_ = data.CreateTransaction(user.ID, participant.ID, venueId, data.TransactionTypeVenue, avgVenueFee, participant.VenueFee, label)
+				_ = data.CreateTransaction(user.ID, participant.ID, venueId, data.TransactionTypeBalance, -avgVenueFee, participant.Balance, label)
+
+				if participant.Balance < 0 {
+					misc.LarkMarkdownChan(fmt.Sprintf("%s 余额不足 当前 %.2f 需要购买额度", participant.Name, participant.Balance))
+				}
+			}
+
+			if avgBallFee > 0 {
+				_ = data.CreateTransaction(user.ID, participant.ID, venueId, data.TransactionTypeBall, avgBallFee, participant.BallFee, label)
+			}
+
+			if avgTrainingFee > 0 {
+				_ = data.CreateTransaction(user.ID, participant.ID, venueId, data.TransactionTypeTraining, avgTrainingFee, participant.TrainingFee, label)
 			}
 		}
 
@@ -362,7 +418,7 @@ func handleVenueDepart(c *gin.Context) {
 
 	ticket := c.PostForm("ticket")
 	_venueId := c.PostForm("venueId")
-	venueId := misc.ToINT(_venueId)
+	venueId := uint(misc.ToINT(_venueId))
 
 	if ticket == "" {
 		c.Status(http.StatusServiceUnavailable)
@@ -408,7 +464,7 @@ func handleVenueStat(c *gin.Context) {
 
 	ticket := c.PostForm("ticket")
 	_venueId := c.PostForm("venueId")
-	venueId := misc.ToINT(_venueId)
+	venueId := uint(misc.ToINT(_venueId))
 
 	if ticket == "" {
 		c.Status(http.StatusServiceUnavailable)

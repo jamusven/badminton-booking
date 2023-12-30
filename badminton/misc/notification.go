@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
+	"time"
 )
 
 type LarkText struct {
@@ -18,11 +20,57 @@ type LarkPost struct {
 	Content LarkText `json:"content"`
 }
 
+var larkChan = make(chan string, 100)
+
+func init() {
+	go larkWorker()
+}
+
+func larkWorker() {
+	ticker := time.NewTicker(time.Duration(shard.SettingInstance.Lark.Interval) * time.Second)
+	defer ticker.Stop()
+
+	var larkMessage []string
+
+loop:
+	for {
+		select {
+		case val, ok := <-larkChan:
+			if !ok {
+				break loop
+			}
+
+			larkMessage = append(larkMessage, val)
+		case <-ticker.C:
+			time.Sleep(5 * time.Second)
+			break loop
+		}
+	}
+
+	if len(larkMessage) > 0 {
+		LarkMarkdown(strings.Join(larkMessage, "\n"))
+	}
+
+	larkWorker()
+}
+
+func LarkMarkdownChan(msg string) {
+	if shard.SettingInstance.Lark.Webhook == "" {
+		return
+	}
+
+	larkChan <- msg
+}
+
 func LarkMarkdown(msg string) {
+	if shard.SettingInstance.Lark.Webhook == "" {
+		return
+	}
+
 	post := LarkPost{
 		MsgType: "text",
 		Content: LarkText{
-			Text: shard.SettingInstance.Keyword + " : " + msg,
+			Text: shard.SettingInstance.Keyword + msg,
 		},
 	}
 

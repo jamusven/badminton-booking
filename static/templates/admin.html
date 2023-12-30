@@ -23,6 +23,8 @@
             <th>Day7</th>
             <th>Day14</th>
             <th>Day30</th>
+            <th>余额</th>
+            <th>车费</th>
             <th>训练费</th>
             <th>场地费</th>
             <th>球费</th>
@@ -36,24 +38,30 @@
         <tr>
             <td>{{ .Name }}</td>
             <td>
-                {{ (index $.Stats .UID).VenueAmount }}
+                {{ (index $.Stats .ID).VenueAmount }}
             </td>
             <td>
-                {{ (index $.Stats .UID).ConfirmAmount }}
-                ({{ index (index $.Stats .UID).ValueMap "confirmPercent" }})
+                {{ (index $.Stats .ID).ConfirmAmount }}
+                ({{ index (index $.Stats .ID).ValueMap "confirmPercent" }})
             </td>
             <td>
-                {{ (index $.Stats .UID).ResponseAmount }}
-                ({{ index (index $.Stats .UID).ValueMap "responsePercent" }})
+                {{ (index $.Stats .ID).ResponseAmount }}
+                ({{ index (index $.Stats .ID).ValueMap "responsePercent" }})
             </td>
             <td>
-                {{ (index $.Stats .UID).Day7 }}
+                {{ (index $.Stats .ID).Day7 }}
             </td>
             <td>
-                {{ (index $.Stats .UID).Day14 }}
+                {{ (index $.Stats .ID).Day14 }}
             </td>
             <td>
-                {{ (index $.Stats .UID).Day30 }}
+                {{ (index $.Stats .ID).Day30 }}
+            </td>
+            <td>
+                {{ printf "%.2f" .Balance }}
+            </td>
+            <td>
+                {{ printf "%.2f" .FareBalance }}({{ printf "%.2f" .FareFee }})
             </td>
             <td>
                 {{ printf "%.2f" .TrainingFee }}
@@ -65,20 +73,22 @@
                 {{ printf "%.2f" .BallFee }}
             </td>
             <td>
-                {{ index (index $.Stats .UID).ValueMap "lastTime" }} ({{ index (index $.Stats .UID).ValueMap "lastPast" }} days Ago)
+                {{ index (index $.Stats .ID).ValueMap "lastTime" }} ({{ index (index $.Stats .ID).ValueMap "lastPast" }} days Ago)
             </td>
             <td>
-                {{ index (index $.Stats .UID).ValueMap "firstTime" }} ({{ index (index $.Stats .UID).ValueMap "firstPast" }} days Ago)
+                {{ index (index $.Stats .ID).ValueMap "firstTime" }} ({{ index (index $.Stats .ID).ValueMap "firstPast" }} days Ago)
             </td>
             <td>{{ .Mobile }}</td>
             <td>{{ index $.UserStateMap .State }}</td>
             <td>
                 <form action="/admin/user/feeUpdate" method="post">
-                    <input type="hidden" name="uid" value="{{ .UID }}">
+                    <input type="hidden" name="uid" value="{{ .ID }}">
                     <input type="hidden" name="ticket" value="{{ $.Ticket }}">
                     <input type="text" name="venueFee" placeholder="场地费" size="4">
                     <input type="text" name="ballFee" placeholder="球费" size="4">
                     <input type="text" name="trainingFee" placeholder="训练费" size="4">
+                    <input type="text" name="balance" placeholder="余额" size="4">
+                    <input type="text" name="fareBalance" placeholder="车费" size="4">
                     <input type="submit" value="添加">
                 </form>
             </td>
@@ -112,6 +122,17 @@
         </label>
         <input type="hidden" name="ticket" value="{{ .Ticket }}">
         <input type="submit" value="更新">
+    </form>
+</fieldset>
+
+<fieldset>
+    <legend>SQL</legend>
+    <form method="post" action="/admin/sql/query">
+        <label>
+            <textarea name="sql"></textarea>
+        </label>
+        <input type="hidden" name="ticket" value="{{ .Ticket }}">
+        <input type="submit" value="Query">
     </form>
 </fieldset>
 

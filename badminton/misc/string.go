@@ -19,6 +19,10 @@ func ToINT(str string) int {
 	return v
 }
 
+func ToIntFromUint(i uint) int {
+	return int(i)
+}
+
 func ToFloat32(str string) float32 {
 	v, _ := strconv.ParseFloat(str, 32)
 	return float32(v)

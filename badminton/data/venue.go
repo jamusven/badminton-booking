@@ -2,50 +2,39 @@ package data
 
 import (
 	"badminton-booking/badminton/misc"
+	"errors"
 	"fmt"
+	"gorm.io/gorm"
 	"os"
 	"time"
 )
 
 func init() {
-	rows, err := DBGet().Query("SELECT name FROM sqlite_master WHERE type='table' AND name='venues'")
-
-	if err != nil {
+	if err := DBGet().AutoMigrate(&Venue{}); err != nil {
 		panic(err)
-	}
-
-	defer rows.Close()
-
-	if !rows.Next() {
-		if _, err := DBGet().Exec("CREATE TABLE IF NOT EXISTS venues (id INTEGER PRIMARY KEY, name TEXT, day TEXT, state INTEGER, amount INTEGER, `limit` INTEGER, desc TEXT, owner INTEGER, fee REAL DEFAULT 0, ball_fee REAL DEFAULT 0, training_fee REAL DEFAULT 0)"); err != nil {
-			panic(err)
-		}
-
-		if _, err := DBGet().Exec("create index venues_state_index on venues (state);"); err != nil {
-			panic(err)
-		}
-
-		if _, err := DBGet().Exec("create index venues_owner_index on venues (owner);"); err != nil {
-			panic(err)
-		}
 	}
 }
 
 type Venue struct {
-	ID          int
+	gorm.Model
+	CreatedAt   time.Time `gorm:"index"`
 	Name        string
 	Day         string
-	State       VenueState
+	State       VenueState `gorm:"index"`
 	Amount      int
 	Limit       int
 	Desc        string
-	Owner       int
+	Owner       uint `gorm:"index"`
 	Fee         float32
 	BallFee     float32
 	TrainingFee float32
 }
 
 const LogDir = "logs"
+
+func (this *Venue) GetLabel() string {
+	return fmt.Sprintf("%s %s %s %d/%d", this.Name, this.Day, this.Desc, this.Amount, this.Limit)
+}
 
 func (this *Venue) Log(userName string, event string, time time.Time) string {
 	msg := fmt.Sprintf("[%s %s] [%s] %s %s", this.Name, this.Day, userName, event, time.Format("2006-01-02 15:04:05"))
@@ -54,7 +43,7 @@ func (this *Venue) Log(userName string, event string, time time.Time) string {
 		os.Mkdir(LogDir, 0755)
 	}
 
-	fileName := fmt.Sprintf("%s/%s.log", LogDir, misc.Sha1(misc.ToString(this.ID)))
+	fileName := fmt.Sprintf("%s/%s.log", LogDir, misc.Sha1(misc.ToString(int(this.ID))))
 
 	if userName == "" && event == "" {
 		if err := os.Remove(fileName); err != nil {
@@ -95,97 +84,37 @@ type VenueSummary struct {
 	Bookings []*Booking
 }
 
-func VenueCreate(owner int, name string, day string, state VenueState, amount, limit int, desc string) (int, error) {
-	if result, err := DBGet().Exec("INSERT INTO venues (name, day, state, amount, `limit`, desc, owner) VALUES (?, ?, ?, ?, ?, ?, ?)", name, day, state, amount, limit, desc, owner); err != nil {
-		return 0, err
-	} else {
-		id, _ := result.LastInsertId()
+func VenueFetchById(id uint) *Venue {
+	var venue Venue
 
-		return int(id), nil
-	}
-}
+	tx := DBGet().First(&venue, id)
 
-func VenueFetchById(id int) *Venue {
-	rows, err := DBGet().Query("SELECT id, name, day, state, amount, `limit`, desc, owner, fee, ball_fee, training_fee FROM venues WHERE id = ?", id)
-
-	if err != nil {
-		panic(err)
+	if tx.Error != nil && !errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+		panic(tx.Error)
 	}
 
-	defer rows.Close()
-
-	if !rows.Next() {
+	if tx.RowsAffected == 0 {
 		return nil
 	}
 
-	venue := &Venue{}
-
-	if err := rows.Scan(&venue.ID, &venue.Name, &venue.Day, &venue.State, &venue.Amount, &venue.Limit, &venue.Desc, &venue.Owner, &venue.Fee, &venue.BallFee, &venue.TrainingFee); err != nil {
-		panic(err)
-	}
-
-	return venue
+	return &venue
 }
 
-func VenueFetchByState(state VenueState) ([]int, []*Venue) {
-	rows, err := DBGet().Query("SELECT id, name, day, state, amount, `limit`, desc, owner, fee, ball_fee, training_fee FROM venues WHERE state = ? order by day asc", state)
-
-	if err != nil {
-		panic(err)
-	}
-
-	defer rows.Close()
-
-	var ids []int
+func VenueFetchByState(state VenueState) ([]uint, []*Venue) {
 
 	var venues []*Venue
-	for rows.Next() {
-		var venue Venue
-		if err := rows.Scan(&venue.ID, &venue.Name, &venue.Day, &venue.State, &venue.Amount, &venue.Limit, &venue.Desc, &venue.Owner, &venue.Fee, &venue.BallFee, &venue.TrainingFee); err != nil {
-			panic(err)
-		}
 
-		venues = append(venues, &venue)
+	tx := DBGet().Where("state = ?", state).Find(&venues)
+
+	if tx.Error != nil {
+		panic(tx.Error)
+	}
+
+	var ids []uint
+
+	for _, venue := range venues {
 		ids = append(ids, venue.ID)
 	}
 
 	return ids, venues
-}
-
-func VenueStateUpdate(id int, state VenueState, fee, ballFee, trainingFee float32) error {
-	if _, err := DBGet().Exec("update venues set state = ?, fee = ?, ball_fee = ?, training_fee = ? where id = ?", state, fee, ballFee, trainingFee, id); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func VenueUpdateDetail(id, amount, limit int, name, day, desc string) error {
-	if _, err := DBGet().Exec("update venues set amount = ? , `limit` = ?, name = ?, day = ?, desc = ? where id = ?", amount, limit, name, day, desc, id); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func VenueCounter() int {
-	rows, err := DBGet().Query("SELECT count(1) FROM venues WHERE state IN (?, ?)", VenueStateRunning, VenueStateDone)
-
-	if err != nil {
-		panic(err)
-	}
-
-	defer rows.Close()
-
-	if !rows.Next() {
-		return 0
-	}
-
-	amount := 0
-
-	if err := rows.Scan(&amount); err != nil {
-		panic(err)
-	}
-
-	return amount
 }

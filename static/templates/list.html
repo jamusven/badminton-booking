@@ -1,68 +1,19 @@
 <!DOCTYPE html>
-<html lang="en" xmlns="http://www.w3.org/1999/html">
+<html lang="en" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
 <head>
     <meta charset="UTF-8">
     <title>{{ .Title }} - {{ $.Me.Name }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f0f0f0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+        .inline, .inline * {
+            display: inline;
         }
+
         fieldset {
-            margin: 1em;
-            border: 1px solid #888;
-            border-radius: 5px;
-            background-color: #fff;
-            width: 90%;
-            max-width: 600px;
-        }
-        legend {
-            padding: 0 1em;
-            color: #007BFF;
-            font-weight: bold;
-        }
-        form {
-            margin: 1em 0;
-            display: flex;
-            flex-direction: column;
+            border-radius: 10px;
+            margin-top: 10px;
         }
 
-        form input, form select {
-            margin-bottom: 1em;
-        }
-
-        input[type="submit"] {
-            color: #fff;
-            background-color: #007BFF;
-            border: none;
-            border-radius: 3px;
-            padding: 0.5em 1em;
-            cursor: pointer;
-            align-self: flex-end;
-        }
-        input[type="submit"]:hover {
-            background-color: #0056b3;
-        }
-        a {
-            color: #007BFF;
-        }
-        a:hover {
-            color: #0056b3;
-        }
-        @media (max-width: 600px) {
-            body {
-                font-size: 0.9em;
-            }
-            input[type="submit"] {
-                padding: 0.3em 0.6em;
-            }
-        }
     </style>
 
     <script>
@@ -73,22 +24,69 @@
             let text = labels[i].querySelector("span").textContent
 
             if (text == "确认") {
-                labels[i].style.backgroundColor = "lightGreen";
+                labels[i].parentNode.parentNode.style.backgroundColor = "lightGreen";
             } else {
-                labels[i].style.backgroundColor = "orange";
+                labels[i].parentNode.parentNode.style.backgroundColor = "orange";
             }
         }
     }
     </script>
 </head>
 <body style="background-color: white">
+<div>
+    <p>
+        <div>
+            <label>余额</label> <span>{{ $.Me.Balance }}</span>
+            <label>车费余额</label> <span>{{ $.Me.FareBalance }}</span>
+        </div>
+
+        <div>
+
+            <label>车费</label> <span>{{ $.Me.FareFee }}</span>
+            <label>场地</label> <span>{{ $.Me.VenueFee }}</span>
+            <label>球费</label> <span>{{ $.Me.BallFee }}</span>
+            <label>训练</label> <span>{{ $.Me.TrainingFee }}</span>
+            <a target="_blank" href="/user/transaction?ticket={{ $.Ticket }}">交易记录</a>
+        </div>
+    </p>
+
+    <p>
+        <form action="/user/transfer" method="post">
+            <label>向</label>
+            <label>
+                <select name="targetUID">
+                    {{ range .Users }}
+                    <option value="{{ .ID }}">{{ .Name }}</option>
+                    {{ end }}
+                </select>
+            </label>
+
+            <label>转账</label>
+
+            <label>
+                <select name="transactionType">
+                    <option value="{{ $.TransactionTypeFare }}">{{ index $.TransactionTypeMap $.TransactionTypeFare }}</option>
+                    <option value="{{ $.TransactionTypeBalance }}">{{ index $.TransactionTypeMap $.TransactionTypeBalance }}</option>
+                </select>
+            </label>
+
+            <label>
+                <input name="amount" placeholder="金额" size="6" />
+            </label>
+
+            <input type="hidden" name="ticket" value="{{ $.Ticket }}" />
+            <input type="submit" value="确认" />
+        </form>
+    </p>
+</div>
+
 {{ range .Venues }}
 <fieldset>
     <legend>{{ .Name }} {{ .Day }} {{ getWeekDay .Day }} {{ .Desc }}</legend>
     <div>
         <form method="post" action="/venue/booking">
             <label>
-                报名选择
+                报名：
                 <span style="color: red; font-weight: bold;">
                 {{- with index (index $.BookingSummaries .ID).AnswerValues $.Me.Name -}}
                 {{- index $.BookingStateMap . -}}
@@ -113,25 +111,15 @@
     </div>
 
     <p>
-        限制 : Min.{{ .Amount }} / Max.{{ .Limit }}
-    </p>
+        <div class="inline">限制 : Min.{{ .Amount }} / Max.{{ .Limit }}</div>
 
-    <p>
-        统计：{{ (index $.BookingSummaries .ID).AnswerCounter }}
-    </p>
-
-    <p>
-        <a href="/logs/{{ sha1 (toString .ID) }}.log?_time={{ now }}">详情</a>：{{ (index $.BookingSummaries .ID).AnswerResponses }}</p>
-    </p>
-
-    <p>
-        <form method="post" action="/venue/stat" style="display: inline" >
+        <form class="inline" method="post" action="/venue/stat">
             <input type="hidden" name="venueId" value="{{ .ID }}">
             <input type="hidden" name="ticket" value="{{ $.Ticket }}">
             <input type="submit" value="统计通知">
         </form>
 
-        <form method="post" action="/venue/depart" style="display: inline; ">
+        <form class="inline" method="post" action="/venue/depart">
             <input type="hidden" name="venueId" value="{{ .ID }}">
             <input type="hidden" name="ticket" value="{{ $.Ticket }}">
             <input type="submit" value="出发通知">
@@ -139,29 +127,43 @@
     </p>
 
     <p>
-    {{ if or (eq $.UserStateAdmin ($.Me.State)) (eq .Owner ($.Me.UID))  }}
+        统计：{{ (index $.BookingSummaries .ID).AnswerCounter }}
+    </p>
+
+    <p>
+        <a href="/logs/{{ sha1 (toString (toIntFromUint .ID)) }}.log?_time={{ now }}">详情</a>：{{ (index $.BookingSummaries .ID).AnswerResponses }}
+    </p>
+
+    <p>
+    {{ if or (eq $.UserStateAdmin ($.Me.State)) (eq .Owner ($.Me.ID))  }}
     <form method="post" action="/venue/limit">
-        设置上下限：
-        <input type="hidden" name="venueId" value="{{ .ID }}">
-        <input type="hidden" name="ticket" value="{{ $.Ticket }}">
-        <input type="text" size="3" name="amount" placeholder="最小人数" {{ if eq .Amount 0 }}value="" {{ else }}value="{{ .Amount }}"{{end}}>
-        <input type="text" size="3" name="limit" placeholder="最大人数" {{ if eq .Limit 0 }}value="" {{ else }}value="{{ .Limit }}"{{end}}>
-        场地信息：
-        <input type="text" name="desc" placeholder="场地信息" value="{{ .Desc }}">
-        场地名：
-        <input type="text" size="5" name="name" placeholder="场地名" value="{{ .Name }}">
-        日期：
-        <input type="text" size="10" name="day" placeholder="日期" value="{{ .Day }}">
-        <input type="submit" value="设置">
+        <p>
+            限制：
+            <input type="hidden" name="venueId" value="{{ .ID }}">
+            <input type="hidden" name="ticket" value="{{ $.Ticket }}">
+            <input type="text" size="4" name="amount" placeholder="Min" {{ if eq .Amount 0 }}value="" {{ else }}value="{{ .Amount }}"{{end}}>
+            <input type="text" size="4" name="limit" placeholder="Max" {{ if eq .Limit 0 }}value="" {{ else }}value="{{ .Limit }}"{{end}}>
+            球馆：
+            <input type="text" size="5" name="name" placeholder="场地名" value="{{ .Name }}">
+        </p>
+        <p>
+            信息：
+            <input type="text" name="desc" placeholder="场地信息" value="{{ .Desc }}">
+        </p>
+        <p>
+            日期：
+            <input type="text" size="10" name="day" placeholder="日期" value="{{ .Day }}">
+            <input type="submit" value="设置">
+        </p>
     </form>
 
     <form method="post" action="/venue/done">
-        结束场地：
+        结束：
         <input type="hidden" name="venueId" value="{{ .ID }}">
         <input type="hidden" name="ticket" value="{{ $.Ticket }}">
-        <input type="text" size="3" name="venueFee" placeholder="场地费">
-        <input type="text" size="3" name="ballFee" placeholder="球费">
-        <input type="text" size="3" name="trainingFee" placeholder="训练费">
+        <input type="text" size="6" name="venueFee" placeholder="场地费">
+        <input type="text" size="6" name="ballFee" placeholder="球费">
+        <input type="text" size="6" name="trainingFee" placeholder="训练费">
         <input type="submit" value="结束">
     </form>
     {{ end }}
@@ -175,7 +177,7 @@
             <legend> 创建场地 </legend>
             <label>
                 <input type="text" placeholder="场地名称" name="name">
-                <input type="text" placeholder="场地日期 2023-08-10" name="day">
+                <input type="text" placeholder="场地日期 {{ .NowYMD }}" name="day">
                 <input type="text" placeholder="场地信息 如: 12x2(3 4)" name="desc" value="">
                 <input type="hidden" name="ticket" value="{{ .Ticket }}">
                 <input type="submit" value="确认">

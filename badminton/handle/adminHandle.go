@@ -11,6 +11,7 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 )
 
 func init() {
@@ -20,6 +21,7 @@ func init() {
 	r.POST("/admin/user/create", handleUserCreate)
 	r.POST("/admin/user/feeUpdate", handleFeeUpdate)
 	r.POST("/admin/setting/update", handleSettingUpdate)
+	r.POST("/admin/sql/query", handleSqlQuery)
 }
 
 func handleAdmin(c *gin.Context) {
@@ -58,8 +60,8 @@ func handleAdmin(c *gin.Context) {
 	sort.Slice(users, func(i, j int) bool {
 		iUser := users[i]
 		jUser := users[j]
-		iStat := stats[iUser.UID]
-		jStat := stats[jUser.UID]
+		iStat := stats[iUser.ID]
+		jStat := stats[jUser.ID]
 
 		if iStat.Day30 != jStat.Day30 {
 			return iStat.Day30 > jStat.Day30
@@ -120,10 +122,9 @@ func handleUserCreate(c *gin.Context) {
 		return
 	}
 
-	name := c.PostForm("name")
-	mobile := c.PostForm("mobile")
-	state1, _ := strconv.Atoi(c.PostForm("state"))
-	state := data.UserState(state1)
+	name := strings.TrimSpace(c.PostForm("name"))
+	mobile := strings.TrimSpace(c.PostForm("mobile"))
+	state := data.UserState(misc.ToINT(c.PostForm("state")))
 
 	if name == "" {
 		c.String(http.StatusOK, "name is empty")
@@ -133,23 +134,38 @@ func handleUserCreate(c *gin.Context) {
 	user := data.UserFetchByName(name)
 
 	if user != nil {
-		if err := data.UserUpdate(name, mobile, state); err != nil {
-			c.String(http.StatusOK, fmt.Sprintf("update user failed: %s", err.Error()))
+		result := data.DBGet().Model(user).Updates(map[string]interface{}{
+			"mobile": mobile,
+			"state":  state,
+		})
+
+		if result.Error != nil {
+			c.String(http.StatusOK, fmt.Sprintf("update user failed: %s", result.Error.Error()))
 			return
-		} else {
-			user.Mobile = mobile
-			user.State = state
 		}
+
+		user.Mobile = mobile
+		user.State = state
+		user.SaveCache()
 
 		c.Redirect(http.StatusMovedPermanently, c.Request.Referer())
 
 		return
 	}
 
-	if err := data.UserCreate(name, mobile, state); err != nil {
-		c.String(http.StatusOK, fmt.Sprintf("create user failed: %s", err.Error()))
+	user = &data.User{}
+	user.Name = name
+	user.Mobile = mobile
+	user.State = state
+
+	result := data.DBGet().Create(user)
+
+	if result.Error != nil {
+		c.String(http.StatusOK, fmt.Sprintf("create user failed: %s", result.Error.Error()))
 		return
 	}
+
+	user.SaveCache()
 
 	c.Redirect(http.StatusMovedPermanently, c.Request.Referer())
 }
@@ -176,17 +192,62 @@ func handleFeeUpdate(c *gin.Context) {
 	venueFee := misc.ToFloat32(c.PostForm("venueFee"))
 	ballFee := misc.ToFloat32(c.PostForm("ballFee"))
 	trainingFee := misc.ToFloat32(c.PostForm("trainingFee"))
+	balance := misc.ToFloat32(c.PostForm("balance"))
+	fareBalance := misc.ToFloat32(c.PostForm("fareBalance"))
 
-	user := data.UserFetchById(uid)
+	user := data.UserFetchById(uint(uid))
 
 	if user != nil {
-		user.VenueFee += venueFee
-		user.BallFee += ballFee
-		user.TrainingFee += trainingFee
+		tx := data.DBGet().Model(user).Updates(map[string]interface{}{
+			"venue_fee":    user.VenueFee + venueFee,
+			"ball_fee":     user.BallFee + ballFee,
+			"training_fee": user.TrainingFee + trainingFee,
+			"fare_balance": user.FareBalance + fareBalance,
+			"balance":      user.Balance + balance,
+		})
 
-		if err := data.UserUpdateFee(user.Name, user.VenueFee, user.BallFee, user.TrainingFee); err != nil {
-			c.String(http.StatusOK, fmt.Sprintf("update user failed: %s", err.Error()))
+		if tx.Error != nil {
+			c.String(http.StatusOK, fmt.Sprintf("update user failed: %s", tx.Error.Error()))
 			return
+		}
+
+		if venueFee != 0 {
+			if err := data.CreateTransaction(admin.ID, user.ID, 0, data.TransactionTypeVenue, venueFee, user.VenueFee, fmt.Sprintf("admin %s", admin.Name)); err != nil {
+				c.String(http.StatusOK, fmt.Sprintf("create transaction failed: %s", tx.Error.Error()))
+				return
+			}
+		}
+
+		if ballFee != 0 {
+			if err := data.CreateTransaction(admin.ID, user.ID, 0, data.TransactionTypeBall, ballFee, user.BallFee, fmt.Sprintf("admin %s", admin.Name)); err != nil {
+				c.String(http.StatusOK, fmt.Sprintf("create transaction failed: %s", tx.Error.Error()))
+				return
+			}
+		}
+
+		if trainingFee != 0 {
+			if err := data.CreateTransaction(admin.ID, user.ID, 0, data.TransactionTypeTraining, trainingFee, user.TrainingFee, fmt.Sprintf("admin %s", admin.Name)); err != nil {
+				c.String(http.StatusOK, fmt.Sprintf("create transaction failed: %s", tx.Error.Error()))
+				return
+			}
+		}
+
+		if balance != 0 {
+			if err := data.CreateTransaction(admin.ID, user.ID, 0, data.TransactionTypeBalance, balance, user.Balance, fmt.Sprintf("admin %s", admin.Name)); err != nil {
+				c.String(http.StatusOK, fmt.Sprintf("create transaction failed: %s", tx.Error.Error()))
+				return
+			}
+
+			go misc.LarkMarkdownChan(fmt.Sprintf("%s 的 %s 金额变动 %.2f 当前 %.2f by %s", user.Name, data.TransactionTypeMap[data.TransactionTypeBalance], balance, user.Balance, admin.Name))
+		}
+
+		if fareBalance != 0 {
+			if err := data.CreateTransaction(admin.ID, user.ID, 0, data.TransactionTypeFare, fareBalance, user.FareBalance, fmt.Sprintf("admin %s", admin.Name)); err != nil {
+				c.String(http.StatusOK, fmt.Sprintf("create transaction failed: %s", tx.Error.Error()))
+				return
+			}
+
+			go misc.LarkMarkdownChan(fmt.Sprintf("%s 的 %s 金额变动 %.2f 当前 %.2f by %s", user.Name, data.TransactionTypeMap[data.TransactionTypeFare], fareBalance, user.FareBalance, admin.Name))
 		}
 	}
 
@@ -228,4 +289,33 @@ func handleSettingUpdate(c *gin.Context) {
 	shard.SettingReload()
 
 	c.Redirect(http.StatusMovedPermanently, c.Request.Referer())
+}
+
+func handleSqlQuery(c *gin.Context) {
+	data.Locker.Lock()
+	defer data.Locker.Unlock()
+
+	ticket := c.PostForm("ticket")
+
+	if ticket == "" {
+		c.Status(http.StatusServiceUnavailable)
+		return
+	}
+
+	admin := data.UserFetchByTicket(ticket)
+
+	if admin == nil || admin.State != data.UserStateAdmin {
+		c.Status(http.StatusServiceUnavailable)
+		return
+	}
+
+	rawSql := c.PostForm("sql")
+	tx := data.DBGet().Exec(rawSql)
+
+	if tx.Error != nil {
+		c.String(http.StatusOK, fmt.Sprintf("exec sql failed: %s", tx.Error.Error()))
+		return
+	}
+
+	c.String(http.StatusOK, fmt.Sprintf("exec sql success: %d", tx.RowsAffected))
 }

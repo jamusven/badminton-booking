@@ -4,6 +4,7 @@ import (
 	"badminton-booking/badminton/data"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"time"
 )
 
 func init() {
@@ -44,6 +45,8 @@ func handleList(c *gin.Context) {
 		"Ticket": ticket,
 		"Me":     user,
 
+		"NowYMD": time.Now().Format(time.DateOnly),
+
 		"Venues":      venues,
 		"Users":       users,
 		"UserNameMap": data.UserNameMapGet(),
@@ -60,6 +63,13 @@ func handleList(c *gin.Context) {
 		"UserStateAdmin":  data.UserStateAdmin,
 		"UserStateZombie": data.UserStateZombie,
 		"UserStateMap":    data.UserStateMap,
+
+		"TransactionTypeVenue":    data.TransactionTypeVenue,
+		"TransactionTypeBall":     data.TransactionTypeBall,
+		"TransactionTypeTraining": data.TransactionTypeTraining,
+		"TransactionTypeBalance":  data.TransactionTypeBalance,
+		"TransactionTypeFare":     data.TransactionTypeFare,
+		"TransactionTypeMap":      data.TransactionTypeMap,
 	})
 }
 
