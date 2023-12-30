@@ -2,7 +2,8 @@
   "port": 40001,
   "keyword": "test",
   "lark": {
-    "webhook": ""
+    "webhook": "",
+    "interval": 30
   },
   "wechat": {
     "iyuu": {

@@ -36,16 +36,16 @@
 <div>
     <p>
         <div>
-            <label>余额</label> <span>{{ $.Me.Balance }}</span>
-            <label>车费余额</label> <span>{{ $.Me.FareBalance }}</span>
+            <label>余额</label> <span>{{ printf "%.2f" $.Me.Balance }}</span>
+            <label>车费余额</label> <span>{{ printf "%.2f" $.Me.FareBalance }}</span>
         </div>
 
         <div>
 
-            <label>车费</label> <span>{{ $.Me.FareFee }}</span>
-            <label>场地</label> <span>{{ $.Me.VenueFee }}</span>
-            <label>球费</label> <span>{{ $.Me.BallFee }}</span>
-            <label>训练</label> <span>{{ $.Me.TrainingFee }}</span>
+            <label>车费</label> <span>{{ printf "%.2f" $.Me.FareFee }}</span>
+            <label>场地</label> <span>{{ printf "%.2f" $.Me.VenueFee }}</span>
+            <label>球费</label> <span>{{ printf "%.2f" $.Me.BallFee }}</span>
+            <label>训练</label> <span>{{ printf "%.2f" $.Me.TrainingFee }}</span>
             <a target="_blank" href="/user/transaction?ticket={{ $.Ticket }}">交易记录</a>
         </div>
     </p>
@@ -56,7 +56,9 @@
             <label>
                 <select name="targetUID">
                     {{ range .Users }}
+                    {{ if ne .State $.UserStateZombie }}
                     <option value="{{ .ID }}">{{ .Name }}</option>
+                    {{ end }}}
                     {{ end }}
                 </select>
             </label>
