@@ -182,7 +182,7 @@ func (this *BookingSummary) Adjust(venue *Venue) bool {
 	}
 
 	if len(details) > 1 {
-		go misc.LarkMarkdown(strings.Join(details, "\n"))
+		venue.NotificationMessage(strings.Join(details, "\n"))
 
 		return true
 	}

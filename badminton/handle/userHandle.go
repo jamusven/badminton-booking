@@ -88,6 +88,11 @@ func handleUserTransfer(c *gin.Context) {
 	amount := misc.ToFloat32(c.PostForm("amount"))
 	targetUID := uint(misc.ToINT(c.PostForm("targetUID")))
 
+	if amount <= 0 {
+		c.String(http.StatusOK, "金额错误")
+		return
+	}
+
 	if ticket == "" {
 		c.Status(http.StatusServiceUnavailable)
 		return
@@ -157,7 +162,7 @@ func handleUserTransfer(c *gin.Context) {
 		return
 	}
 
-	if err := data.CreateTransaction(user.ID, user.ID, 0, transactionType, amount, balance-amount, fmt.Sprintf("转账给 %s", targetUser.Name)); err != nil {
+	if err := data.CreateTransaction(user.ID, user.ID, 0, transactionType, -amount, balance-amount, fmt.Sprintf("转账给 %s", targetUser.Name)); err != nil {
 		c.String(http.StatusOK, err.Error())
 		return
 	}

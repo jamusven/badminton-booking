@@ -17,17 +17,18 @@ func init() {
 
 type Venue struct {
 	gorm.Model
-	CreatedAt   time.Time `gorm:"index"`
-	Name        string
-	Day         string
-	State       VenueState `gorm:"index"`
-	Amount      int
-	Limit       int
-	Desc        string
-	Owner       uint `gorm:"index"`
-	Fee         float32
-	BallFee     float32
-	TrainingFee float32
+	CreatedAt    time.Time `gorm:"index"`
+	Name         string
+	Day          string
+	State        VenueState `gorm:"index"`
+	Amount       int
+	Limit        int
+	Desc         string
+	Owner        uint `gorm:"index"`
+	Fee          float32
+	BallFee      float32
+	TrainingFee  float32
+	Notification bool `gorm:"default:true"`
 }
 
 const LogDir = "logs"
@@ -69,6 +70,13 @@ func (this *Venue) Log(userName string, event string, time time.Time) string {
 	}
 
 	return msg
+}
+
+func (this *Venue) NotificationMessage(message string) {
+	if !this.Notification {
+		return
+	}
+	go misc.LarkMarkdown(message)
 }
 
 type VenueState int

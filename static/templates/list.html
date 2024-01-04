@@ -180,6 +180,10 @@
                 <input type="text" placeholder="场地名称" name="name">
                 <input type="text" placeholder="场地日期 {{ .NowYMD }}" name="day">
                 <input type="text" placeholder="场地信息 如: 12x2(3 4)" name="desc" value="">
+                <select name="notification">
+                    <option value="1">允许通知</option>
+                    <option value="0">忽略通知</option>
+                </select>
                 <input type="hidden" name="ticket" value="{{ .Ticket }}">
                 <input type="submit" value="确认">
             </label>

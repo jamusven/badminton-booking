@@ -44,13 +44,15 @@ func handleVenueCreate(c *gin.Context) {
 	name := c.PostForm("name")
 	day := c.PostForm("day")
 	desc := c.PostForm("desc")
+	notification := misc.ToINT(c.PostForm("notification"))
 
 	venue := &data.Venue{
-		Owner: user.ID,
-		Name:  name,
-		Day:   day,
-		Desc:  desc,
-		State: data.VenueStateRunning,
+		Owner:        user.ID,
+		Name:         name,
+		Day:          day,
+		Desc:         desc,
+		State:        data.VenueStateRunning,
+		Notification: notification == 1,
 	}
 
 	tx := data.DBGet().Create(venue)
@@ -62,9 +64,12 @@ func handleVenueCreate(c *gin.Context) {
 
 	msg := venue.Log(user.Name, "创建了场地", time.Now())
 
-	go misc.LarkMarkdown(msg)
-	go misc.Wechat(msg)
-	go misc.LarkMarkdown(fmt.Sprintf("create <at user_id=\"all\">everyone</at>"))
+	venue.NotificationMessage(msg)
+	venue.NotificationMessage(fmt.Sprintf("create <at user_id=\"all\">everyone</at>"))
+
+	if venue.Notification {
+		go misc.Wechat(msg)
+	}
 
 	c.Redirect(http.StatusMovedPermanently, c.Request.Referer())
 }
@@ -141,7 +146,7 @@ func handleVenueBooking(c *gin.Context) {
 		if okAmount%4 != 0 {
 			bookingMsg := fmt.Sprintf("[%s %s %s] [%s] 确认. 人数: %d, Limit(%d/%d)", venue.Name, venue.Day, misc.GetWeekDay(venue.Day), user.GetName(worker), okAmount, venue.Amount, venue.Limit)
 
-			go misc.LarkMarkdown(bookingMsg)
+			venue.NotificationMessage(bookingMsg)
 
 			return
 		}
@@ -181,7 +186,7 @@ func handleVenueBooking(c *gin.Context) {
 
 		msg := venue.Log(user.GetName(worker), fmt.Sprintf("From %s To %s", data.BookingStateMap[data.BookingStateOK], data.BookingStateMap[state]), time.Now())
 
-		go misc.LarkMarkdown(msg)
+		venue.NotificationMessage(msg)
 
 		if answerCounter[data.BookingStateMap[data.BookingStateAuto]] > 0 {
 			calculate = true
@@ -195,7 +200,7 @@ func handleVenueBooking(c *gin.Context) {
 			changed = false
 
 			msg := venue.Log(user.GetName(worker), fmt.Sprintf("下车中禁止操作"), time.Now())
-			go misc.LarkMarkdown(msg)
+			venue.NotificationMessage(msg)
 
 			return
 		}
@@ -206,7 +211,7 @@ func handleVenueBooking(c *gin.Context) {
 			state = data.BookingStateAuto
 
 			msg := venue.Log(user.GetName(worker), fmt.Sprintf("人员已满 自动变更为 %s", data.BookingStateMap[state]), time.Now())
-			go misc.LarkMarkdown(msg)
+			venue.NotificationMessage(msg)
 		} else {
 			checkMultipleOfFour()
 		}
@@ -218,7 +223,7 @@ func handleVenueBooking(c *gin.Context) {
 		return
 	}
 
-	go misc.LarkMarkdown(selectionDesc)
+	venue.NotificationMessage(selectionDesc)
 }
 
 func handleVenueLimit(c *gin.Context) {
@@ -278,7 +283,7 @@ func handleVenueLimit(c *gin.Context) {
 	msg := venue.Log(user.Name, fmt.Sprintf("更新了场地信息 limit(%d/%d) desc(%s)", amount, limit, desc), time.Now())
 
 	if adjust {
-		go misc.LarkMarkdown(msg)
+		venue.NotificationMessage(msg)
 
 		bookingSummary := data.BookingSummaryByVenueId(venueId)
 		bookingSummary.Adjust(venue)
@@ -341,8 +346,7 @@ func handleVenueDone(c *gin.Context) {
 		msg := venue.Log(user.Name, fmt.Sprintf("场地已取消"), time.Now())
 
 		venue.Log("", "", time.Now())
-
-		go misc.LarkMarkdown(msg)
+		venue.NotificationMessage(msg)
 	} else {
 		venue.State = data.VenueStateDone
 		venue.Fee = venueFee
@@ -406,7 +410,7 @@ func handleVenueDone(c *gin.Context) {
 			}
 		}
 
-		go misc.LarkMarkdown(msg)
+		venue.NotificationMessage(msg)
 	}
 
 	c.Redirect(http.StatusMovedPermanently, c.Request.Referer())
