@@ -112,7 +112,7 @@ func VenueFetchByState(state VenueState) ([]uint, []*Venue) {
 
 	var venues []*Venue
 
-	tx := DBGet().Where("state = ?", state).Find(&venues)
+	tx := DBGet().Where("state = ?", state).Order("day asc").Find(&venues)
 
 	if tx.Error != nil {
 		panic(tx.Error)
