@@ -9,6 +9,11 @@
             height: auto;
             min-height: 300px;
         }
+
+        table tbody tr:hover {
+            background-color: bisque;
+        }
+
     </style>
 </head>
 <body style="background-color: white">
@@ -23,6 +28,7 @@
             <th>Day7</th>
             <th>Day14</th>
             <th>Day30</th>
+            <th>Day60</th>
             <th>余额</th>
             <th>车费</th>
             <th>训练费</th>
@@ -56,6 +62,9 @@
             </td>
             <td>
                 {{ (index $.Stats .ID).Day30 }}
+            </td>
+            <td>
+                {{ (index $.Stats .ID).Day60 }}
             </td>
             <td>
                 {{ printf "%.2f" .Balance }}

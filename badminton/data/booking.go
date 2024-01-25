@@ -254,6 +254,7 @@ type BookingStat struct {
 	Day7           int
 	Day14          int
 	Day30          int
+	Day60          int
 	ConfirmAmount  int
 	ResponseAmount int
 }
@@ -330,11 +331,16 @@ func BookingStats() map[uint]*BookingStat {
 					stat.Day7++
 					stat.Day14++
 					stat.Day30++
+					stat.Day60++
 				} else if now-adjustBookingTime <= 86400*14 {
 					stat.Day14++
 					stat.Day30++
+					stat.Day60++
 				} else if now-adjustBookingTime <= 86400*30 {
 					stat.Day30++
+					stat.Day60++
+				} else if now-adjustBookingTime <= 86400*60 {
+					stat.Day60++
 				}
 			}
 		}
