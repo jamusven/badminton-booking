@@ -87,6 +87,12 @@ func (this *BookingSummary) Adjust(venue *Venue) bool {
 
 			answerCounter[booking.State]++
 		}
+
+		if booking.State == BookingStateNO {
+			marked[key] = true
+
+			answerCounter[booking.State]++
+		}
 	}
 
 	for _, booking := range this.Answers {
