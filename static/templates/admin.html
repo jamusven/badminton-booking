@@ -18,7 +18,16 @@
 </head>
 <body style="background-color: white">
 <fieldset>
-    <legend>用户列表 ( {{ .UserActiveAmt }}活跃 {{ .UserTotalAmt }}总数 {{ .UserZombieAmt }}僵尸 )</legend>
+    <legend>
+        用户列表 ( {{ .UserActiveAmt }}活跃 {{ .UserTotalAmt }}总数 {{ .UserZombieAmt }}僵尸 )
+        (
+        余额：{{ printf "%.2f" (index $.BalanceDetail "Balance") }}
+        车费：{{ printf "%.2f" (index $.BalanceDetail "FareBalance") }}
+        场地：{{ printf "%.2f" (index $.BalanceDetail "VenueFee") }}
+        球费：{{ printf "%.2f" (index $.BalanceDetail "BallFee") }}
+        训练：{{ printf "%.2f" (index $.BalanceDetail "TrainingFee") }}
+        )
+    </legend>
     <table border="1px" cellpadding="5px" style="border:1px solid black;border-collapse:collapse; text-align: center;">
         <tr>
             <th>用户名</th>

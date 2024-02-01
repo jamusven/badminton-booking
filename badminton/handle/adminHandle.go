@@ -47,6 +47,12 @@ func handleAdmin(c *gin.Context) {
 	userActiveAmt := 0
 	userZombieAmt := 0
 
+	var balanceAmount float32
+	var fareBalanceAmount float32
+	var ballFeeAmount float32
+	var trainingFeeAmount float32
+	var venueFeeAmount float32
+
 	for _, user := range users {
 		userTotalAmt++
 
@@ -55,6 +61,12 @@ func handleAdmin(c *gin.Context) {
 		} else {
 			userActiveAmt++
 		}
+
+		balanceAmount += user.Balance
+		fareBalanceAmount += user.FareBalance
+		ballFeeAmount += user.BallFee
+		trainingFeeAmount += user.TrainingFee
+		venueFeeAmount += user.VenueFee
 	}
 
 	sort.Slice(users, func(i, j int) bool {
@@ -85,6 +97,14 @@ func handleAdmin(c *gin.Context) {
 		"UserTotalAmt":  userTotalAmt,
 		"UserActiveAmt": userActiveAmt,
 		"UserZombieAmt": userZombieAmt,
+
+		"BalanceDetail": map[string]float32{
+			"Balance":     balanceAmount,
+			"FareBalance": fareBalanceAmount,
+			"BallFee":     ballFeeAmount,
+			"TrainingFee": trainingFeeAmount,
+			"VenueFee":    venueFeeAmount,
+		},
 
 		"Users": users,
 		"Stats": stats,
