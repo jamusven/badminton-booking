@@ -2,6 +2,7 @@ package handle
 
 import (
 	"badminton-booking/badminton/data"
+	"badminton-booking/badminton/shard"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"time"
@@ -41,9 +42,11 @@ func handleList(c *gin.Context) {
 	bookingSummaries := data.BookingSummaryByVenueIds(venueIds)
 
 	c.HTML(http.StatusOK, "list.html", gin.H{
-		"Title":  title,
-		"Ticket": ticket,
-		"Me":     user,
+		"Title":   title,
+		"Ticket":  ticket,
+		"Drivers": shard.SettingInstance.Drivers,
+
+		"Me": user,
 
 		"NowYMD": time.Now().Format(time.DateOnly),
 

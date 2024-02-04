@@ -29,6 +29,22 @@
                 labels[i].parentNode.parentNode.style.backgroundColor = "orange";
             }
         }
+
+        let drivers = {{ .Drivers  }};
+        let bodyHtml = document.body.innerHTML;
+
+        console.log(drivers);
+
+        for (let i = 0, max = drivers.length; i < max ; i++) {
+            let regex = new RegExp(drivers[i], 'g');
+            bodyHtml = bodyHtml.replace(regex, drivers[i] + '🚘');
+
+           console.log(drivers[i]);
+        }
+
+        console.log(bodyHtml);
+
+        document.body.innerHTML = bodyHtml;
     }
     </script>
 </head>

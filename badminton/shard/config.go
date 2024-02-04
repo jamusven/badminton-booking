@@ -11,6 +11,7 @@ type Setting struct {
 	Lark    Lark              `json:"lark"`
 	Wechat  Wechat            `json:"wechat"`
 	Stash   map[string]string `json:"stash"`
+	Drivers []string          `json:"drivers"`
 }
 
 type Lark struct {
