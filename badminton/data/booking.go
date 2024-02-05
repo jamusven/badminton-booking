@@ -88,7 +88,7 @@ func (this *BookingSummary) Adjust(venue *Venue) bool {
 			answerCounter[booking.State]++
 		}
 
-		if booking.State == BookingStateNO {
+		if booking.State == BookingStateNO || booking.State == BookingStateManual {
 			marked[key] = true
 
 			answerCounter[booking.State]++
