@@ -178,6 +178,10 @@ func (this *BookingSummary) Adjust(venue *Venue) bool {
 			panic(tx.Error)
 		}
 
+		if booking.State == BookingStateAuto {
+			continue
+		}
+
 		userName := UserFetchById(booking.UserID).GetName(booking.Worker)
 
 		msg := venue.Log(userName, fmt.Sprintf("From %s To %s", BookingStateMap[BookingStateExiting], BookingStateMap[booking.State]), time.Now())
