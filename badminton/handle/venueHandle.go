@@ -337,7 +337,7 @@ func handleVenueDone(c *gin.Context) {
 			panic(tx.Error)
 		}
 
-		tx = data.DBGet().Where("venue_id = ?", venue.ID).Delete(&data.Booking{})
+		tx = data.DBGet().Where("venue_id = ?", venue.ID).Updates(&data.Booking{State: data.BookingStateManual})
 
 		if tx.Error != nil && errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			panic(tx.Error)
@@ -345,7 +345,6 @@ func handleVenueDone(c *gin.Context) {
 
 		msg := venue.Log(user.Name, fmt.Sprintf("场地已取消"), time.Now())
 
-		venue.Log("", "", time.Now())
 		venue.NotificationMessage(msg)
 	} else {
 		venue.State = data.VenueStateDone

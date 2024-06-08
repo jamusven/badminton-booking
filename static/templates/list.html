@@ -40,6 +40,21 @@
 
         document.body.innerHTML = bodyHtml;
     }
+
+    function checkVenueFee(form) {
+        let venueFee = form['venueFee'].value;
+        let ballFee = form['ballFee'].value;
+        let trainingFee = form['trainingFee'].value;
+
+        if (!venueFee && !ballFee && !trainingFee) {
+            if (!confirm('确定要取消场地吗？')) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     </script>
 </head>
 <body style="background-color: white">
@@ -168,7 +183,7 @@
         </p>
     </form>
 
-    <form method="post" action="/venue/done">
+    <form method="post" action="/venue/done1" onsubmit="return checkVenueFee(this)">
         结束：
         <input type="hidden" name="venueId" value="{{ .ID }}">
         <input type="hidden" name="ticket" value="{{ $.Ticket }}">
