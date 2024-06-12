@@ -183,7 +183,7 @@
         </p>
     </form>
 
-    <form method="post" action="/venue/done1" onsubmit="return checkVenueFee(this)">
+    <form method="post" action="/venue/done" onsubmit="return checkVenueFee(this)">
         结束：
         <input type="hidden" name="venueId" value="{{ .ID }}">
         <input type="hidden" name="ticket" value="{{ $.Ticket }}">
