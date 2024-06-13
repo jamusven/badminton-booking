@@ -175,7 +175,6 @@ func (this *BookingSummary) Adjust(venue *Venue) bool {
 			if tx.Error != nil {
 				panic(tx.Error)
 			}
-			panic(tx.Error)
 		}
 
 		if booking.State == BookingStateAuto {
