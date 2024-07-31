@@ -6,12 +6,13 @@ import (
 )
 
 type Setting struct {
-	Port    int               `json:"port"`
-	Keyword string            `json:"keyword"`
-	Lark    Lark              `json:"lark"`
-	Wechat  Wechat            `json:"wechat"`
-	Stash   map[string]string `json:"stash"`
-	Drivers []string          `json:"drivers"`
+	Port            int                     `json:"port"`
+	Keyword         string                  `json:"keyword"`
+	Lark            Lark                    `json:"lark"`
+	Wechat          Wechat                  `json:"wechat"`
+	Stash           map[string]string       `json:"stash"`
+	Alias           map[string]string       `json:"alias"`
+	VenueBookingMap map[string]VenueBooking `json:"venueBookingMap"`
 }
 
 type Lark struct {
@@ -22,6 +23,13 @@ type Lark struct {
 type Wechat struct {
 	Iyuu        map[string]string `json:"iyuu"`
 	IyuuWebhook string            `json:"iyuuWebhook"`
+}
+
+type VenueBooking struct {
+	Name   string `json:"name"`
+	Desc   string `json:"desc"`
+	Amount int32  `json:"amount"`
+	Limit  int32  `json:"limit"`
 }
 
 var SettingInstance *Setting

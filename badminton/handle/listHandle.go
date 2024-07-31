@@ -42,9 +42,10 @@ func handleList(c *gin.Context) {
 	bookingSummaries := data.BookingSummaryByVenueIds(venueIds)
 
 	c.HTML(http.StatusOK, "list.html", gin.H{
-		"Title":   title,
-		"Ticket":  ticket,
-		"Drivers": shard.SettingInstance.Drivers,
+		"Title":           title,
+		"Ticket":          ticket,
+		"Alias":           shard.SettingInstance.Alias,
+		"VenueBookingMap": shard.SettingInstance.VenueBookingMap,
 
 		"Me": user,
 

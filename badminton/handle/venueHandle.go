@@ -45,6 +45,8 @@ func handleVenueCreate(c *gin.Context) {
 	day := c.PostForm("day")
 	desc := c.PostForm("desc")
 	notification := misc.ToINT(c.PostForm("notification"))
+	amount := misc.ToINT(c.PostForm("amount"))
+	limit := misc.ToINT(c.PostForm("limit"))
 
 	venue := &data.Venue{
 		Owner:        user.ID,
@@ -53,6 +55,8 @@ func handleVenueCreate(c *gin.Context) {
 		Desc:         desc,
 		State:        data.VenueStateRunning,
 		Notification: notification == 1,
+		Amount:       amount,
+		Limit:        limit,
 	}
 
 	tx := data.DBGet().Create(venue)
@@ -212,6 +216,8 @@ func handleVenueBooking(c *gin.Context) {
 
 			msg := venue.Log(user.GetName(worker), fmt.Sprintf("人员已满 自动变更为 %s", data.BookingStateMap[state]), time.Now())
 			venue.NotificationMessage(msg)
+
+			go handleVenueStat(c)
 		} else {
 			checkMultipleOfFour()
 		}

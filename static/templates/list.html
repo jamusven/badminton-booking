@@ -30,15 +30,45 @@
             }
         }
 
-        let drivers = {{ .Drivers  }};
+        let alias = {{ .Alias  }};
+        let venueBookingMap = {{ .VenueBookingMap  }};
         let bodyHtml = document.body.innerHTML;
 
-        for (let i = 0, max = drivers.length; i < max ; i++) {
-            let regex = new RegExp(drivers[i], 'g');
-            bodyHtml = bodyHtml.replace(regex, drivers[i] + '🚘');
+        for (let name in alias) {
+            let regex = new RegExp(name, 'g');
+            bodyHtml = bodyHtml.replace(regex, alias[name]);
         }
 
         document.body.innerHTML = bodyHtml;
+
+        const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+        let lastVenue = document.querySelector("body > fieldset:last-of-type > legend")
+
+        if (lastVenue) {
+            let venueLabelParts = lastVenue.innerHTML.split(" ");
+            let venueDay = new Date(venueLabelParts[1]);
+
+            let venueDayIndex = venueDay.getDay();
+            let daysSearched = 0;
+
+            while(daysSearched < 7) {
+                daysSearched++;
+                venueDayIndex = (venueDayIndex + 1) % 7
+                let nextDayName = daysOfWeek[venueDayIndex];
+
+                if (venueBookingMap[nextDayName]) {
+                    let nextDay = venueDay.setDate(venueDay.getDate() + daysSearched);
+
+                    document.getElementById('createName').value = venueLabelParts[0];
+                    document.getElementById('createDay').value = new Date(nextDay).toISOString().split('T')[0];
+                    document.getElementById('createDesc').value = venueBookingMap[nextDayName].desc;
+                    document.getElementById('createAmount').value = venueBookingMap[nextDayName].amount;
+                    document.getElementById('createLimit').value = venueBookingMap[nextDayName].limit;
+                    break;
+                }
+            }
+        }
     }
 
     function checkVenueFee(form) {
@@ -202,14 +232,16 @@
         <fieldset>
             <legend> 创建场地 </legend>
             <label>
-                <input type="text" placeholder="场地名称" name="name">
-                <input type="text" placeholder="场地日期 {{ .NowYMD }}" name="day">
-                <input type="text" placeholder="场地信息 如: 12x2(3 4)" name="desc" value="">
+                <input type="text" placeholder="场地名称" name="name" id="createName">
+                <input type="text" placeholder="场地日期 {{ .NowYMD }}" name="day" id="createDay">
+                <input type="text" placeholder="场地信息 如: 12x2(3 4)" name="desc" value="" id="createDesc">
                 <select name="notification">
                     <option value="1">允许通知</option>
                     <option value="0">忽略通知</option>
                 </select>
                 <input type="hidden" name="ticket" value="{{ .Ticket }}">
+                <input type="hidden" name="amount" value="0" id="createAmount">
+                <input type="hidden" name="limit" value="0" id="createLimit">
                 <input type="submit" value="确认">
             </label>
         </fieldset>
