@@ -373,7 +373,7 @@ func handleVenueDone(c *gin.Context) {
 		avgBallFee := ballFee / float32(len(list))
 		avgTrainingFee := trainingFee / float32(len(list))
 
-		msg := venue.Log(user.Name, fmt.Sprintf("场地已结束，人均约 %.2f 元. 人员：%s", avgVenueFee+avgBallFee, strings.Join(list, "、")), time.Now())
+		msg := venue.Log(user.Name, fmt.Sprintf("[%s] 场地已结束，人均约 %.2f 元. \n人员：%s", venue.Desc, avgVenueFee+avgBallFee, strings.Join(list, "、")), time.Now())
 
 		label := venue.GetLabel()
 

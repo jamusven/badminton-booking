@@ -32,14 +32,22 @@
 
         let alias = {{ .Alias  }};
         let venueBookingMap = {{ .VenueBookingMap  }};
-        let bodyHtml = document.body.innerHTML;
 
-        for (let name in alias) {
-            let regex = new RegExp(name, 'g');
-            bodyHtml = bodyHtml.replace(regex, alias[name]);
+        const aElements = document.querySelectorAll('body > fieldset > p > a');
+
+        for (let i = 0; i < aElements.length; i++) {
+            let aElement = aElements[i];
+            let pElement = aElement.parentNode;
+
+            let pInnerHTML = pElement.innerHTML;
+
+            for (let name in alias) {
+                let regex = new RegExp(name, 'g');
+                pInnerHTML = pInnerHTML.replace(regex, alias[name]);
+            }
+
+            pElement.innerHTML = pInnerHTML;
         }
-
-        document.body.innerHTML = bodyHtml;
 
         const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
