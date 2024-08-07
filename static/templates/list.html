@@ -18,6 +18,8 @@
 
     <script>
     window.onload = function () {
+        let userName = "{{ $.Me.Name }}";
+
         let labels = document.querySelectorAll("fieldset div label");
 
         for (var i = 0; i < labels.length; i++) {
@@ -43,7 +45,7 @@
 
             for (let name in alias) {
                 let regex = new RegExp(name, 'g');
-                pInnerHTML = pInnerHTML.replace(regex, alias[name]);
+                pInnerHTML = pInnerHTML.replace(regex, '<span title="'+ name +'" onClick="JavaScript:alert(\''+ name +'\');">' + alias[name] + '</span>');
             }
 
             pElement.innerHTML = pInnerHTML;
@@ -77,6 +79,35 @@
                 }
             }
         }
+
+        let inputGameText = document.getElementById('inputGameText');
+
+        document.getElementById('btnHighLow').onclick = function () {
+            let random = Math.floor(Math.random() * 100) + 1;
+
+            inputGameText.value = " 比大小 " + userName + " " + random;
+            inputGameText.parentNode.submit();
+        };
+
+        document.getElementById('btnRockPaperScissor').onclick = function () {
+            let random = Math.floor(Math.random() * 3);
+            let mapping = ["✌️", "✊", "🖐️"];
+
+            inputGameText.value = " 剪刀布 " +  userName + " " + mapping[random];
+            inputGameText.parentNode.submit();
+        };
+
+        document.getElementById('btnRollingDice').onclick = function () {
+            let numbers = [];
+
+            for (let i = 0 ; i < 3; i++) {
+                let random = Math.floor(Math.random() * 6) + 1;
+                numbers.push(random);
+            }
+
+            inputGameText.value = " 摇骰子 " + userName + " " + numbers.join(" ") + " = " + numbers.reduce((a, b) => a + b, 0);
+            inputGameText.parentNode.submit();
+        };
     }
 
     function checkVenueFee(form) {
@@ -140,6 +171,15 @@
 
             <input type="hidden" name="ticket" value="{{ $.Ticket }}" />
             <input type="submit" value="确认" />
+        </form>
+
+        <form method="post" action="/notification">
+            🎮
+            <input type="hidden" name="ticket" value="{{ $.Ticket }}">
+            <input type="hidden" name="text" id="inputGameText">
+            <input type="button" value="比大小" id="btnHighLow">
+            <input type="button" value="剪刀布" id="btnRockPaperScissor">
+            <input type="button" value="摇骰子" id="btnRollingDice">
         </form>
     </p>
 </div>

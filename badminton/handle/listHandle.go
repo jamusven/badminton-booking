@@ -2,6 +2,7 @@ package handle
 
 import (
 	"badminton-booking/badminton/data"
+	"badminton-booking/badminton/misc"
 	"badminton-booking/badminton/shard"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -14,6 +15,7 @@ func init() {
 	r.GET("/", handleIndex)
 	r.GET("/list", handleList)
 	r.GET("/login", handleLogin)
+	r.POST("/notification", handleNotification)
 }
 
 func handleIndex(c *gin.Context) {
@@ -88,4 +90,19 @@ func handleLogin(c *gin.Context) {
 	c.HTML(http.StatusOK, "login.html", gin.H{
 		"Title": title,
 	})
+}
+
+func handleNotification(c *gin.Context) {
+	ticket := c.PostForm("ticket")
+	text := c.PostForm("text")
+
+	user := data.UserFetchByTicket(ticket)
+
+	if user == nil {
+		c.Status(http.StatusServiceUnavailable)
+		return
+	}
+
+	go misc.LarkMarkdown(text)
+	c.Redirect(http.StatusMovedPermanently, c.Request.Referer())
 }
