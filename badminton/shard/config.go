@@ -16,8 +16,9 @@ type Setting struct {
 }
 
 type Lark struct {
-	Webhook  string `json:"webhook"`
-	Interval int    `json:"interval"`
+	Webhook       string `json:"webhook"`
+	RecordWebhook string `json:"recordWebhook"`
+	Interval      int    `json:"interval"`
 }
 
 type Wechat struct {

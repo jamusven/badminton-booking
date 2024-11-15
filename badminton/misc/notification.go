@@ -131,3 +131,14 @@ func WechatSingle(name, msg string) {
 
 	defer resp.Body.Close()
 }
+
+func Http(url string, data []byte) {
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(data))
+	if err != nil {
+		panic(err)
+	}
+
+	//fmt.Printf("content: %s, resp: %v\n", post.Content.Text, resp)
+
+	defer resp.Body.Close()
+}

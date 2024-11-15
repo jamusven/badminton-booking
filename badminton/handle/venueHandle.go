@@ -3,6 +3,7 @@ package handle
 import (
 	"badminton-booking/badminton/data"
 	"badminton-booking/badminton/misc"
+	"badminton-booking/badminton/shard"
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -374,6 +375,19 @@ func handleVenueDone(c *gin.Context) {
 		avgTrainingFee := trainingFee / float32(len(list))
 
 		msg := venue.Log(user.Name, fmt.Sprintf("[%s] 场地已结束，人均约 %.2f 元. \n人员：%s", venue.Desc, avgVenueFee+avgBallFee, strings.Join(list, "、")), time.Now())
+
+		if shard.SettingInstance.Lark.RecordWebhook != "" {
+			recordMsg := map[string]string{
+				"day":      venue.Day,
+				"name":     venue.Name,
+				"desc":     venue.Desc,
+				"users":    strings.Join(list, ","),
+				"venueFee": fmt.Sprintf("%.2f", avgVenueFee),
+				"ballFee":  fmt.Sprintf("%.2f", avgBallFee),
+			}
+
+			go misc.Http(shard.SettingInstance.Lark.RecordWebhook, []byte(misc.ToJsonPrettify(recordMsg)))
+		}
 
 		label := venue.GetLabel()
 
