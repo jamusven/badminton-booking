@@ -75,16 +75,11 @@ func handleAdmin(c *gin.Context) {
 		iStat := stats[iUser.ID]
 		jStat := stats[jUser.ID]
 
-		if iStat.Day30 != jStat.Day30 {
-			return iStat.Day30 > jStat.Day30
-		}
+		iWeight := iStat.Day60*1000 + iStat.Day30*100 + iStat.Day14*10 + iStat.Day7
+		jWeight := jStat.Day60*1000 + jStat.Day30*100 + jStat.Day14*10 + jStat.Day7
 
-		if iStat.Day14 != jStat.Day14 {
-			return iStat.Day14 > jStat.Day14
-		}
-
-		if iStat.Day7 != jStat.Day7 {
-			return iStat.Day7 > jStat.Day7
+		if iWeight != jWeight {
+			return iWeight > jWeight
 		}
 
 		return iStat.LastTime > jStat.LastTime
