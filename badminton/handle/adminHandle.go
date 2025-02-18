@@ -87,7 +87,7 @@ func handleAdmin(c *gin.Context) {
 			return iStat.Day7 > jStat.Day7
 		}
 
-		return iUser.TrainingFee+iUser.BallFee+iUser.VenueFee > jUser.TrainingFee+jUser.BallFee+jUser.VenueFee
+		return iStat.LastTime > jStat.LastTime
 	})
 
 	c.HTML(http.StatusOK, "admin.html", gin.H{

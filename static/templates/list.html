@@ -151,7 +151,7 @@
                     {{ range .Users }}
                     {{ if ne .State $.UserStateZombie }}
                     <option value="{{ .ID }}">{{ .Name }}</option>
-                    {{ end }}}
+                    {{ end }}
                     {{ end }}
                 </select>
             </label>

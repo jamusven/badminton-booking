@@ -281,7 +281,6 @@ func BookingStats() map[uint]*BookingStat {
 			ValueMap:  make(map[string]interface{}),
 			UID:       user.ID,
 			FirstTime: user.CreatedAt.Unix(),
-			LastTime:  user.UpdatedAt.Unix(),
 		}
 
 		userStats[user.ID] = stat
