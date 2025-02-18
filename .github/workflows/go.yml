@@ -31,7 +31,7 @@ jobs:
     - name: Release
       uses: softprops/action-gh-release@v1
       with:
-        name: "Build ${{ github.run_number }}"
+        name: "Development Build"
         tag_name: "v0.1.${{ github.run_number }}"
         files: |
           badminton/badminton.linux
