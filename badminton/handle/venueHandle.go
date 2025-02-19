@@ -396,8 +396,12 @@ func handleVenueDone(c *gin.Context) {
 
 			if participant == nil {
 				if strings.Contains(name, "(") {
-					parentName := strings.Split(name, "(")[0]
-					participant = data.UserFetchByName(parentName)
+					start := strings.Index(name, "(")
+					end := strings.Index(name, ")")
+					if start != -1 && end != -1 && start < end {
+						parentName := name[start+1 : end]
+						participant = data.UserFetchByName(parentName)
+					}
 				}
 
 				if participant == nil {
