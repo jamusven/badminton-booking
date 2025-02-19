@@ -395,9 +395,15 @@ func handleVenueDone(c *gin.Context) {
 			participant := data.UserFetchByName(name)
 
 			if participant == nil {
-				go misc.LarkMarkdownChan(fmt.Sprintf("用户 %s 不存在需要单独缴费 %.2f", name, avgVenueFee+avgBallFee+avgTrainingFee))
+				if strings.Contains(name, "(") {
+					parentName := strings.Split(name, "(")[0]
+					participant = data.UserFetchByName(parentName)
+				}
 
-				continue
+				if participant == nil {
+					go misc.LarkMarkdownChan(fmt.Sprintf("用户 %s 不存在需要单独缴费 %.2f", name, avgVenueFee+avgBallFee+avgTrainingFee))
+					continue
+				}
 			}
 
 			tx := data.DBGet().Model(participant).Updates(map[string]interface{}{
