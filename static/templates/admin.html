@@ -15,6 +15,26 @@
         }
 
     </style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('btFeeHidden').addEventListener('click', function() {
+        const th = this.closest('th');
+
+        const thIndex = Array.from(th.parentNode.children).indexOf(th);
+
+        const columnIndex = thIndex + 1;
+
+        const feeUpdateTds = document.querySelectorAll(`td:nth-child(${columnIndex})`);
+        const feeUpdateTh = document.querySelector(`th:nth-child(${columnIndex})`);
+
+        const isHidden = feeUpdateTh.style.display === 'none';
+        feeUpdateTh.style.display = isHidden ? '' : 'none';
+        feeUpdateTds.forEach(td => {
+            td.style.display = isHidden ? '' : 'none';
+        });
+    });
+});
+</script>
 </head>
 <body style="background-color: white">
 <fieldset>
@@ -47,7 +67,7 @@
             <th>最早响应时间</th>
             <th>手机号</th>
             <th>状态</th>
-            <th>费用更新</th>
+            <th>费用更新 <input type="button" value="隐藏本列" id="btFeeHidden"></th>
         </tr>
         {{ range .Users }}
         <tr>

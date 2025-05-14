@@ -107,7 +107,7 @@ func handleUserTransfer(c *gin.Context) {
 
 	targetUser := data.UserFetchById(targetUID)
 
-	if user == nil {
+	if targetUser == nil {
 		c.Status(http.StatusServiceUnavailable)
 		return
 	}

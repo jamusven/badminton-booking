@@ -366,7 +366,7 @@ func BookingStats() map[uint]*BookingStat {
 		stat, _ := userStats[user.ID]
 
 		for _, venueDayTime := range venueDayMap {
-			if venueDayTime >= user.CreatedAt.Unix() {
+			if venueDayTime >= user.CreatedAt.Unix() && venueDayTime <= stat.LastTime+14*86400 {
 				stat.VenueAmount++
 			}
 		}
