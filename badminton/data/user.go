@@ -15,15 +15,16 @@ func init() {
 
 type User struct {
 	gorm.Model
-	Name        string `gorm:"uniqueIndex"`
-	Mobile      string
-	State       UserState
-	VenueFee    float32
-	BallFee     float32
-	TrainingFee float32
-	Balance     float32
-	FareBalance float32
-	FareFee     float32
+	Name          string `gorm:"uniqueIndex"`
+	Mobile        string
+	State         UserState
+	VenueFee      float32
+	BallFee       float32
+	TrainingFee   float32
+	Balance       float32
+	FareBalance   float32
+	FareFee       float32
+	CareerPeriods string
 }
 
 func (this *User) SaveCache() {

@@ -20,6 +20,7 @@ func init() {
 	r.GET("/admin", handleAdmin)
 	r.POST("/admin/user/create", handleUserCreate)
 	r.POST("/admin/user/feeUpdate", handleFeeUpdate)
+	r.POST("/admin/user/careerPeriodUpdate", handleCareerPeriodUpdate)
 	r.POST("/admin/setting/update", handleSettingUpdate)
 	r.POST("/admin/sql/query", handleSqlQuery)
 }
@@ -263,6 +264,43 @@ func handleFeeUpdate(c *gin.Context) {
 			}
 
 			go misc.LarkMarkdownChan(fmt.Sprintf("%s 的 %s 金额变动 %.2f 当前 %.2f by %s", user.Name, data.TransactionTypeMap[data.TransactionTypeFare], fareBalance, user.FareBalance, admin.Name))
+		}
+	}
+
+	c.Redirect(http.StatusMovedPermanently, c.Request.Referer())
+}
+
+func handleCareerPeriodUpdate(c *gin.Context) {
+	data.Locker.Lock()
+	defer data.Locker.Unlock()
+
+	ticket := c.PostForm("ticket")
+
+	if ticket == "" {
+		c.Status(http.StatusServiceUnavailable)
+		return
+	}
+
+	admin := data.UserFetchByTicket(ticket)
+
+	if admin == nil || admin.State != data.UserStateAdmin {
+		c.Status(http.StatusServiceUnavailable)
+		return
+	}
+
+	uid, _ := strconv.Atoi(c.PostForm("uid"))
+	careerPeriod := strings.TrimSpace(c.PostForm("careerPeriods"))
+
+	user := data.UserFetchById(uint(uid))
+
+	if user != nil {
+		tx := data.DBGet().Model(user).Updates(map[string]interface{}{
+			"career_periods": careerPeriod,
+		})
+
+		if tx.Error != nil {
+			c.String(http.StatusOK, fmt.Sprintf("update user failed: %s", tx.Error.Error()))
+			return
 		}
 	}
 

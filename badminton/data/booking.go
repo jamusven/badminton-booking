@@ -365,9 +365,46 @@ func BookingStats() map[uint]*BookingStat {
 	for _, user := range users {
 		stat, _ := userStats[user.ID]
 
+		var careerPeriods []map[string]int64
+
+		if user.CareerPeriods != "" {
+			_careerPeriods := strings.Split(user.CareerPeriods, ";")
+
+			for _, period := range _careerPeriods {
+				periods := strings.Split(period, "_")
+				if len(periods) != 2 {
+					continue
+				}
+
+				startTime, err := time.Parse(time.DateOnly, periods[0])
+				if err != nil {
+					continue
+				}
+
+				endTime, err := time.Parse(time.DateOnly, periods[1])
+				if err != nil {
+					continue
+				}
+
+				careerPeriods = append(careerPeriods, map[string]int64{
+					"start": startTime.Unix(),
+					"end":   endTime.Unix(),
+				})
+			}
+		}
+
 		for _, venueDayTime := range venueDayMap {
-			if venueDayTime >= user.CreatedAt.Unix() && venueDayTime <= stat.LastTime+14*86400 {
-				stat.VenueAmount++
+			if len(careerPeriods) == 0 {
+				if venueDayTime >= user.CreatedAt.Unix() && venueDayTime <= stat.LastTime+14*86400 {
+					stat.VenueAmount++
+				}
+			} else {
+				for _, period := range careerPeriods {
+					if venueDayTime >= period["start"] && venueDayTime <= period["end"] {
+						stat.VenueAmount++
+						break
+					}
+				}
 			}
 		}
 
