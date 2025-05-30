@@ -214,13 +214,29 @@ func handleFeeUpdate(c *gin.Context) {
 	user := data.UserFetchById(uint(uid))
 
 	if user != nil {
-		tx := data.DBGet().Model(user).Updates(map[string]interface{}{
-			"venue_fee":    user.VenueFee + venueFee,
-			"ball_fee":     user.BallFee + ballFee,
-			"training_fee": user.TrainingFee + trainingFee,
-			"fare_balance": user.FareBalance + fareBalance,
-			"balance":      user.Balance + balance,
-		})
+		changes := map[string]interface{}{}
+
+		if balance != 0 {
+			changes["balance"] = user.Balance + balance
+		}
+
+		if ballFee != 0 {
+			changes["ball_fee"] = user.BallFee + ballFee
+		}
+
+		if trainingFee != 0 {
+			changes["training_fee"] = user.TrainingFee + trainingFee
+		}
+
+		if venueFee != 0 {
+			changes["venue_fee"] = user.VenueFee + venueFee
+		}
+
+		if fareBalance != 0 {
+			changes["fare_balance"] = user.FareBalance + fareBalance
+		}
+
+		tx := data.DBGet().Model(user).Updates(changes)
 
 		if tx.Error != nil {
 			c.String(http.StatusOK, fmt.Sprintf("update user failed: %s", tx.Error.Error()))

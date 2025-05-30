@@ -16,13 +16,22 @@
 
     </style>
 <script>
+
+function selectText(element) {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('btFeeHidden').addEventListener('click', function() {
         const th = this.closest('th');
 
         const thIndex = Array.from(th.parentNode.children).indexOf(th);
 
-        const hiddenIndexes = [thIndex + 1, thIndex + 2];
+        const hiddenIndexes = [thIndex + 1];
 
         for (let i = 0, max = hiddenIndexes.length; i < max; i++) {
             const tds = document.querySelectorAll(`td:nth-child(${hiddenIndexes[i]})`);
@@ -35,9 +44,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    const editableElements = document.querySelectorAll('.editable-career-periods');
-
-    editableElements.forEach(element => {
+    document.querySelectorAll('.editable-career-periods').forEach(element => {
         element.addEventListener('blur', function(event) {
             const careerPeriods = event.target.innerText.trim();
             const userId = event.target.getAttribute('data-user-id');
@@ -58,6 +65,47 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
         });
     });
+
+    const initBalanceEditableElements = function(className, fieldName) {
+        document.querySelectorAll(className).forEach(element => {
+            element.addEventListener('blur', function(event) {
+                const balance = parseFloat(event.target.innerText.trim());
+                const userId = event.target.getAttribute('data-user-id');
+                const ticket = element.getAttribute('data-ticket');
+                const oldBalance = parseFloat(event.target.getAttribute('data-balance'));
+
+                if (balance > 1 && Math.abs(oldBalance - balance) < 0.05) {
+                    return;
+                }
+
+                const urlParams = new URLSearchParams({ uid: userId, ticket: ticket });
+                urlParams.set(fieldName, balance);
+
+                fetch(`/admin/user/feeUpdate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: urlParams,
+                })
+                    .then(response => {
+                        return response.text();
+                    })
+                    .then(data => {
+                        event.target.innerText = balance + oldBalance;
+                        event.target.setAttribute('data-balance', balance + oldBalance);
+                    })
+                    .catch(error => {
+                        alert("更新失败: " + error.message);
+                    });
+            });
+        });
+    };
+
+    initBalanceEditableElements('.editable-balance', 'balance');
+    initBalanceEditableElements('.editable-fareFee', 'fareBalance');
+    initBalanceEditableElements('.editable-trainingFee', 'trainingFee');
+    initBalanceEditableElements('.editable-venueFee', 'venueFee');
+    initBalanceEditableElements('.editable-ballFee', 'ballFee');
+
 });
 </script>
 </head>
@@ -92,8 +140,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <th>最早响应时间</th>
             <th>手机号</th>
             <th>状态</th>
-            <th>费用更新 <input type="button" value="隐藏本列" id="btFeeHidden"></th>
-            <th>职业生涯</th>
+            <th>职业生涯 <input type="button" value="隐藏本列" id="btFeeHidden"></th>
         </tr>
         {{ range .Users }}
         <tr>
@@ -121,19 +168,54 @@ document.addEventListener('DOMContentLoaded', function() {
             <td>
                 {{ (index $.Stats .ID).Day60 }}
             </td>
-            <td>
+            <td
+                    class="editable-balance"
+                    contenteditable="true"
+                    data-user-id="{{ .ID }}"
+                    data-ticket="{{ $.Ticket }}"
+                    data-balance="{{ .Balance }}"
+                    onclick="selectText(this)"
+            >
                 {{ printf "%.2f" .Balance }}
             </td>
-            <td>
+            <td
+                    class="editable-fareFee"
+                    contenteditable="true"
+                    data-user-id="{{ .ID }}"
+                    data-ticket="{{ $.Ticket }}"
+                    data-balance="{{ .FareBalance }}"
+                    onclick="selectText(this)"
+            >
                 {{ printf "%.2f" .FareBalance }}({{ printf "%.2f" .FareFee }})
             </td>
-            <td>
+            <td
+                    class="editable-trainingFee"
+                    contenteditable="true"
+                    data-user-id="{{ .ID }}"
+                    data-ticket="{{ $.Ticket }}"
+                    data-balance="{{ .TrainingFee }}"
+                    onclick="selectText(this)"
+            >
                 {{ printf "%.2f" .TrainingFee }}
             </td>
-            <td>
+            <td
+                    class="editable-venueFee"
+                    contenteditable="true"
+                    data-user-id="{{ .ID }}"
+                    data-ticket="{{ $.Ticket }}"
+                    data-balance="{{ .VenueFee }}"
+                    onclick="selectText(this)"
+            >
                 {{ printf "%.2f" .VenueFee }}
             </td>
-            <td>
+            <td
+                    class="editable-ballFee"
+                    contenteditable="true"
+                    data-user-id="{{ .ID }}"
+                    data-ticket="{{ $.Ticket }}"
+                    data-balance="{{ .BallFee }}"
+                    onclick="selectText(this)"
+            >
                 {{ printf "%.2f" .BallFee }}
             </td>
             <td>
@@ -144,27 +226,13 @@ document.addEventListener('DOMContentLoaded', function() {
             </td>
             <td>{{ .Mobile }}</td>
             <td>{{ index $.UserStateMap .State }}</td>
-            <td>
-                <form action="/admin/user/feeUpdate" method="post">
-                    <input type="hidden" name="uid" value="{{ .ID }}">
-                    <input type="hidden" name="ticket" value="{{ $.Ticket }}">
-                    <input type="text" name="venueFee" placeholder="场地费" size="4">
-                    <input type="text" name="ballFee" placeholder="球费" size="4">
-                    <input type="text" name="trainingFee" placeholder="训练费" size="4">
-                    <input type="text" name="balance" placeholder="余额" size="4">
-                    <input type="text" name="fareBalance" placeholder="车费" size="4">
-                    <input type="submit" value="添加">
-                </form>
-            </td>
-            <td>
-                <div
-                        class="editable-career-periods"
-                        contenteditable="true"
-                        data-user-id="{{ .ID }}"
-                        data-ticket="{{ $.Ticket }}"
-                >
-                    {{ printf .CareerPeriods }}
-                </div>
+            <td
+                    class="editable-career-periods"
+                    contenteditable="true"
+                    data-user-id="{{ .ID }}"
+                    data-ticket="{{ $.Ticket }}"
+            >
+                {{ printf .CareerPeriods }}
             </td>
         </tr>
         {{ end }}
