@@ -1,13 +1,40 @@
 {
   "port": 40001,
-  "keyword": "test",
+  "keyword": "sven",
   "lark": {
-    "webhook": "",
-    "interval": 30
+    "webhook": "https://open.feishu.cn/open-apis/bot/v2/hook/39515d70-fe5a-49bf-8801-425220639c48",
+    "recordWebhook": "https://funplus.feishu.cn/base/automation/webhook/event/ElnEaA3zFwMw9ghIA1Ncd41UnVg",
+    "interval": 3
   },
   "wechat": {
-    "iyuu": {
-    },
+    "iyuu": {},
     "iyuuWebhook": "http://iyuu.cn/%s.send?text=%s"
+  },
+  "stash": null,
+  "alias": {
+    "sven666": "sven666🏍️",
+
+    "高歌": "高歌🚘",
+    "张娟": "张娟🚘"
+  },
+  "venueBookingMap": {
+    "Friday": {
+      "name": "jy",
+      "desc": "12*2(4 5)",
+      "amount": 8,
+      "limit": 10
+    },
+    "Monday": {
+      "name": "jy",
+      "desc": "12*2(2 3)",
+      "amount": 8,
+      "limit": 10
+    },
+    "Wednesday": {
+      "name": "jy",
+      "desc": "12*2(4 5)",
+      "amount": 8,
+      "limit": 10
+    }
   }
 }
