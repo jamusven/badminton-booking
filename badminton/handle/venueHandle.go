@@ -141,6 +141,15 @@ func handleVenueBooking(c *gin.Context) {
 		return
 	}
 
+	if (user.State == data.UserStateAdmin || user.ID == venue.Owner) && worker != "" {
+		workerUser := data.UserFetchByName(worker)
+
+		if workerUser != nil {
+			user = workerUser
+			worker = ""
+		}
+	}
+
 	selectionDesc := venue.Log(user.GetName(worker), fmt.Sprintf("选择了 %s", data.BookingStateMap[state]), time.Now())
 
 	bookingSummary := data.BookingSummaryByVenueId(venueId)

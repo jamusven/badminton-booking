@@ -18,6 +18,7 @@
 <script>
 
 function selectText(element) {
+    element.innerText = 0;
     const range = document.createRange();
     range.selectNodeContents(element);
     const selection = window.getSelection();
@@ -74,7 +75,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const ticket = element.getAttribute('data-ticket');
                 const oldBalance = parseFloat(event.target.getAttribute('data-balance'));
 
-                if (balance !== 1 && Math.abs(oldBalance - balance) < 0.05) {
+                if (balance === 0) {
+                    event.target.innerText = oldBalance;
+
                     return;
                 }
 
