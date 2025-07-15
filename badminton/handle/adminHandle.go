@@ -48,11 +48,11 @@ func handleAdmin(c *gin.Context) {
 	userActiveAmt := 0
 	userZombieAmt := 0
 
-	var balanceAmount float32
-	var fareBalanceAmount float32
-	var ballFeeAmount float32
-	var trainingFeeAmount float32
-	var venueFeeAmount float32
+	var balanceAmount int64
+	var fareBalanceAmount int64
+	var ballFeeAmount int64
+	var trainingFeeAmount int64
+	var venueFeeAmount int64
 
 	for _, user := range users {
 		userTotalAmt++
@@ -76,8 +76,8 @@ func handleAdmin(c *gin.Context) {
 		iStat := stats[iUser.ID]
 		jStat := stats[jUser.ID]
 
-		iWeight := iStat.Day60*1000 + iStat.Day30*100 + iStat.Day14*10 + iStat.Day7
-		jWeight := jStat.Day60*1000 + jStat.Day30*100 + jStat.Day14*10 + jStat.Day7
+		iWeight := iStat.Day30<<16 | iStat.Day14<<8 | iStat.Day7
+		jWeight := jStat.Day30<<16 | jStat.Day14<<8 | jStat.Day7
 
 		if iWeight != jWeight {
 			return iWeight > jWeight
@@ -94,7 +94,7 @@ func handleAdmin(c *gin.Context) {
 		"UserActiveAmt": userActiveAmt,
 		"UserZombieAmt": userZombieAmt,
 
-		"BalanceDetail": map[string]float32{
+		"BalanceDetail": map[string]int64{
 			"Balance":     balanceAmount,
 			"FareBalance": fareBalanceAmount,
 			"BallFee":     ballFeeAmount,
@@ -205,11 +205,11 @@ func handleFeeUpdate(c *gin.Context) {
 	}
 
 	uid, _ := strconv.Atoi(c.PostForm("uid"))
-	venueFee := misc.ToFloat32(c.PostForm("venueFee"))
-	ballFee := misc.ToFloat32(c.PostForm("ballFee"))
-	trainingFee := misc.ToFloat32(c.PostForm("trainingFee"))
-	balance := misc.ToFloat32(c.PostForm("balance"))
-	fareBalance := misc.ToFloat32(c.PostForm("fareBalance"))
+	venueFee := int64(misc.ToFloat32(c.PostForm("venueFee")) * data.TransactionCents)
+	ballFee := int64(misc.ToFloat32(c.PostForm("ballFee")) * data.TransactionCents)
+	trainingFee := int64(misc.ToFloat32(c.PostForm("trainingFee")) * data.TransactionCents)
+	balance := int64(misc.ToFloat32(c.PostForm("balance")) * data.TransactionCents)
+	fareBalance := int64(misc.ToFloat32(c.PostForm("fareBalance")) * data.TransactionCents)
 
 	user := data.UserFetchById(uint(uid))
 
@@ -270,7 +270,7 @@ func handleFeeUpdate(c *gin.Context) {
 				return
 			}
 
-			go misc.LarkMarkdownChan(fmt.Sprintf("%s 的 %s 金额变动 %.2f 当前 %.2f by %s", user.Name, data.TransactionTypeMap[data.TransactionTypeBalance], balance, user.Balance, admin.Name))
+			go misc.LarkMarkdownChan(fmt.Sprintf("%s 的 %s 金额变动 %.2f 当前 %.2f by %s", user.Name, data.TransactionTypeMap[data.TransactionTypeBalance], misc.Cent2Yuan(balance, data.TransactionCents), misc.Cent2Yuan(user.Balance, data.TransactionCents), admin.Name))
 		}
 
 		if fareBalance != 0 {
@@ -279,7 +279,7 @@ func handleFeeUpdate(c *gin.Context) {
 				return
 			}
 
-			go misc.LarkMarkdownChan(fmt.Sprintf("%s 的 %s 金额变动 %.2f 当前 %.2f by %s", user.Name, data.TransactionTypeMap[data.TransactionTypeFare], fareBalance, user.FareBalance, admin.Name))
+			go misc.LarkMarkdownChan(fmt.Sprintf("%s 的 %s 金额变动 %.2f 当前 %.2f by %s", user.Name, data.TransactionTypeMap[data.TransactionTypeFare], misc.Cent2Yuan(fareBalance, data.TransactionCents), misc.Cent2Yuan(user.FareBalance, data.TransactionCents), admin.Name))
 		}
 	}
 

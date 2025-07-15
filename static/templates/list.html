@@ -23,13 +23,32 @@
         let labels = document.querySelectorAll("fieldset div label");
 
         for (var i = 0; i < labels.length; i++) {
-            let text = labels[i].querySelector("span").textContent
+            let text = labels[i].querySelector("span").textContent;
 
-            if (text == "确认") {
+            if (text === "确认") {
                 labels[i].parentNode.parentNode.style.backgroundColor = "lightGreen";
             } else {
                 labels[i].parentNode.parentNode.style.backgroundColor = "orange";
             }
+        }
+
+        let counterLabels = document.querySelectorAll("body  fieldset  p:nth-child(8)");
+
+        for (var i = 0; i < counterLabels.length; i++) {
+            let text = counterLabels[i].textContent;
+            let reply = text.match(/替补自动:([0-9]+)/);
+
+            if (reply.length < 2) {
+                continue;
+            }
+
+            let count = parseInt(reply[1]);
+
+            if (count < 2) {
+                continue;
+            }
+
+            counterLabels[i].style.backgroundColor = "lightpink";
         }
 
         let alias = {{ .Alias  }};
@@ -119,6 +138,10 @@
             if (!confirm('确定要取消场地吗？')) {
                 return false;
             }
+        } else {
+            if (!confirm('确定要结束场地吗？')) {
+                return false;
+            }
         }
 
         return true;
@@ -130,16 +153,16 @@
 <div>
     <p>
         <div>
-            <label>余额</label> <span>{{ printf "%.2f" $.Me.Balance }}</span>
-            <label>车费余额</label> <span>{{ printf "%.2f" $.Me.FareBalance }}</span>
+            <label>余额</label> <span>{{ cent2Yuan $.Me.Balance 100 }}</span>
+            <label>车费余额</label> <span>{{ cent2Yuan $.Me.FareBalance 100 }}</span>
             <a target="_blank" href="/user/transaction?ticket={{ $.Ticket }}">交易记录</a>
         </div>
 
         <div>
-            <label>车费</label> <span>{{ printf "%.2f" $.Me.FareFee }}</span>
-            <label>场地</label> <span>{{ printf "%.2f" $.Me.VenueFee }}</span>
-            <label>球费</label> <span>{{ printf "%.2f" $.Me.BallFee }}</span>
-            <label>训练</label> <span>{{ printf "%.2f" $.Me.TrainingFee }}</span>
+            <label>车费</label> <span>{{ cent2Yuan $.Me.FareFee 100 }}</span>
+            <label>场地</label> <span>{{ cent2Yuan $.Me.VenueFee 100 }}</span>
+            <label>球费</label> <span>{{ cent2Yuan $.Me.BallFee 100 }}</span>
+            <label>训练</label> <span>{{ cent2Yuan $.Me.TrainingFee 100 }}</span>
         </div>
     </p>
 

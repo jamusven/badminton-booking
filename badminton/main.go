@@ -32,6 +32,7 @@ func main() {
 		"toJson":        misc.ToJson,
 		"getWeekDay":    misc.GetWeekDay,
 		"now":           misc.Now,
+		"cent2Yuan":     misc.Cent2Yuan,
 	})
 
 	if *debug {

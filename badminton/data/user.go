@@ -18,12 +18,12 @@ type User struct {
 	Name          string `gorm:"uniqueIndex"`
 	Mobile        string
 	State         UserState
-	VenueFee      float32
-	BallFee       float32
-	TrainingFee   float32
-	Balance       float32
-	FareBalance   float32
-	FareFee       float32
+	VenueFee      int64
+	BallFee       int64
+	TrainingFee   int64
+	Balance       int64
+	FareBalance   int64
+	FareFee       int64
 	CareerPeriods string
 }
 

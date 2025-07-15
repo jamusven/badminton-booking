@@ -19,6 +19,11 @@ func ToINT(str string) int {
 	return v
 }
 
+func ToINT64(str string) int64 {
+	v, _ := strconv.Atoi(str)
+	return int64(v)
+}
+
 func ToIntFromUint(i uint) int {
 	return int(i)
 }

@@ -25,9 +25,9 @@ type Venue struct {
 	Limit        int
 	Desc         string
 	Owner        uint `gorm:"index"`
-	Fee          float32
-	BallFee      float32
-	TrainingFee  float32
+	Fee          int64
+	BallFee      int64
+	TrainingFee  int64
 	Notification bool `gorm:"default:true"`
 }
 

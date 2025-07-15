@@ -1,13 +1,12 @@
 {
   "port": 40001,
-  "keyword": "test",
+  "keyword": "xxxx",
   "lark": {
-    "webhook": "",
-    "interval": 30
+    "interval": 3
   },
   "wechat": {
-    "iyuu": {
-    },
+    "iyuu": {},
     "iyuuWebhook": "http://iyuu.cn/%s.send?text=%s"
-  }
+  },
+  "stash": null
 }

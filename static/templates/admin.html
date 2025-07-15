@@ -117,11 +117,11 @@ document.addEventListener('DOMContentLoaded', function() {
     <legend>
         用户列表 ( {{ .UserActiveAmt }}活跃 {{ .UserTotalAmt }}总数 {{ .UserZombieAmt }}僵尸 )
         (
-        余额：{{ printf "%.2f" (index $.BalanceDetail "Balance") }}
-        车费：{{ printf "%.2f" (index $.BalanceDetail "FareBalance") }}
-        场地：{{ printf "%.2f" (index $.BalanceDetail "VenueFee") }}
-        球费：{{ printf "%.2f" (index $.BalanceDetail "BallFee") }}
-        训练：{{ printf "%.2f" (index $.BalanceDetail "TrainingFee") }}
+        余额：{{ cent2Yuan (index $.BalanceDetail "Balance") 100 }}
+        车费：{{ cent2Yuan (index $.BalanceDetail "FareBalance") 100 }}
+        场地：{{ cent2Yuan (index $.BalanceDetail "VenueFee") 100 }}
+        球费：{{ cent2Yuan (index $.BalanceDetail "BallFee") 100 }}
+        训练：{{ cent2Yuan (index $.BalanceDetail "TrainingFee") 100 }}
         )
     </legend>
     <table border="1px" cellpadding="5px" style="border:1px solid black;border-collapse:collapse; text-align: center;">
@@ -176,20 +176,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     contenteditable="true"
                     data-user-id="{{ .ID }}"
                     data-ticket="{{ $.Ticket }}"
-                    data-balance="{{ .Balance }}"
+                    data-balance="{{ cent2Yuan .Balance 100 }}"
                     onclick="selectText(this)"
             >
-                {{ printf "%.2f" .Balance }}
+                {{ cent2Yuan .Balance 100 }}
             </td>
             <td
                     class="editable-fareFee"
                     contenteditable="true"
                     data-user-id="{{ .ID }}"
                     data-ticket="{{ $.Ticket }}"
-                    data-balance="{{ .FareBalance }}"
+                    data-balance="{{ cent2Yuan .FareBalance 100 }}"
                     onclick="selectText(this)"
             >
-                {{ printf "%.2f" .FareBalance }}({{ printf "%.2f" .FareFee }})
+                {{ cent2Yuan .FareBalance 100 }}({{ cent2Yuan .FareFee 100 }})
             </td>
             <td
                     class="editable-trainingFee"
@@ -199,27 +199,27 @@ document.addEventListener('DOMContentLoaded', function() {
                     data-balance="{{ .TrainingFee }}"
                     onclick="selectText(this)"
             >
-                {{ printf "%.2f" .TrainingFee }}
+                {{ cent2Yuan .TrainingFee 100 }}
             </td>
             <td
                     class="editable-venueFee"
                     contenteditable="true"
                     data-user-id="{{ .ID }}"
                     data-ticket="{{ $.Ticket }}"
-                    data-balance="{{ .VenueFee }}"
+                    data-balance="{{ cent2Yuan .VenueFee 100 }}"
                     onclick="selectText(this)"
             >
-                {{ printf "%.2f" .VenueFee }}
+                {{ cent2Yuan .VenueFee 100 }}
             </td>
             <td
                     class="editable-ballFee"
                     contenteditable="true"
                     data-user-id="{{ .ID }}"
                     data-ticket="{{ $.Ticket }}"
-                    data-balance="{{ .BallFee }}"
+                    data-balance="{{ cent2Yuan .BallFee 100 }}"
                     onclick="selectText(this)"
             >
-                {{ printf "%.2f" .BallFee }}
+                {{ cent2Yuan .BallFee 100 }}
             </td>
             <td>
                 {{ index (index $.Stats .ID).ValueMap "lastTime" }} ({{ index (index $.Stats .ID).ValueMap "lastPast" }} days Ago)

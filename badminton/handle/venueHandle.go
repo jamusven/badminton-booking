@@ -316,9 +316,9 @@ func handleVenueDone(c *gin.Context) {
 	ticket := c.PostForm("ticket")
 	_venueId := c.PostForm("venueId")
 	venueId := uint(misc.ToINT(_venueId))
-	venueFee := misc.ToFloat32(c.PostForm("venueFee"))
-	ballFee := misc.ToFloat32(c.PostForm("ballFee"))
-	trainingFee := misc.ToFloat32(c.PostForm("trainingFee"))
+	venueFee := int64(misc.ToFloat32(c.PostForm("venueFee")) * data.TransactionCents)
+	ballFee := int64(misc.ToFloat32(c.PostForm("ballFee")) * data.TransactionCents)
+	trainingFee := int64(misc.ToFloat32(c.PostForm("trainingFee")) * data.TransactionCents)
 
 	if ticket == "" {
 		c.Status(http.StatusServiceUnavailable)
@@ -379,11 +379,11 @@ func handleVenueDone(c *gin.Context) {
 		list := bookingSummary.AnswerResponses[data.BookingStateMap[data.BookingStateOK]]
 		list = append(list, bookingSummary.AnswerResponses[data.BookingStateMap[data.BookingStateExiting]]...)
 
-		avgVenueFee := venueFee / float32(len(list))
-		avgBallFee := ballFee / float32(len(list))
-		avgTrainingFee := trainingFee / float32(len(list))
+		avgVenueFee := venueFee / int64(len(list))
+		avgBallFee := ballFee / int64(len(list))
+		avgTrainingFee := trainingFee / int64(len(list))
 
-		msg := venue.Log(user.Name, fmt.Sprintf("[%s] 场地已结束，人均约 %.2f 元. \n人员：%s", venue.Desc, avgVenueFee+avgBallFee, strings.Join(list, "、")), time.Now())
+		msg := venue.Log(user.Name, fmt.Sprintf("[%s] 场地已结束，人均约 %.2f 元. \n人员：%s", venue.Desc, misc.Cent2Yuan(avgVenueFee+avgBallFee, data.TransactionCents), strings.Join(list, "、")), time.Now())
 
 		if shard.SettingInstance.Lark.RecordWebhook != "" {
 			recordMsg := map[string]string{
@@ -391,8 +391,8 @@ func handleVenueDone(c *gin.Context) {
 				"name":     venue.Name,
 				"desc":     venue.Desc,
 				"users":    strings.Join(list, ","),
-				"venueFee": fmt.Sprintf("%.2f", avgVenueFee),
-				"ballFee":  fmt.Sprintf("%.2f", avgBallFee),
+				"venueFee": fmt.Sprintf("%.2f", misc.Cent2Yuan(avgVenueFee, data.TransactionCents)),
+				"ballFee":  fmt.Sprintf("%.2f", misc.Cent2Yuan(avgBallFee, data.TransactionCents)),
 			}
 
 			go misc.Http(shard.SettingInstance.Lark.RecordWebhook, []byte(misc.ToJsonPrettify(recordMsg)))
@@ -414,7 +414,7 @@ func handleVenueDone(c *gin.Context) {
 				}
 
 				if participant == nil {
-					go misc.LarkMarkdownChan(fmt.Sprintf("用户 %s 不存在需要单独缴费 %.2f", name, avgVenueFee+avgBallFee+avgTrainingFee))
+					go misc.LarkMarkdownChan(fmt.Sprintf("用户 %s 不存在需要单独缴费 %.2f", name, misc.Cent2Yuan(avgVenueFee+avgBallFee+avgTrainingFee, data.TransactionCents)))
 					continue
 				}
 			}
@@ -435,7 +435,7 @@ func handleVenueDone(c *gin.Context) {
 				_ = data.CreateTransaction(user.ID, participant.ID, venueId, data.TransactionTypeBalance, -avgVenueFee, participant.Balance, label)
 
 				if participant.Balance < 0 {
-					misc.LarkMarkdownChan(fmt.Sprintf("%s 余额不足 当前 %.2f 需要购买额度", participant.Name, participant.Balance))
+					misc.LarkMarkdownChan(fmt.Sprintf("%s 余额不足 当前 %.2f 需要购买额度", participant.Name, misc.Cent2Yuan(participant.Balance, data.TransactionCents)))
 				}
 			}
 

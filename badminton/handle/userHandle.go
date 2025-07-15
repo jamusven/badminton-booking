@@ -73,8 +73,8 @@ func handleUserTransaction(c *gin.Context) {
 		records = append(records, strings.Join([]string{
 			transaction.CreatedAt.Format("2006-01-02 15:04:05"),
 			data.TransactionTypeMap[transaction.Type],
-			fmt.Sprintf("%.2f", transaction.CurrentAmount),
-			fmt.Sprintf("%.2f", transaction.ChangeAmount),
+			fmt.Sprintf("%.2f", misc.Cent2Yuan(transaction.CurrentAmount, data.TransactionCents)),
+			fmt.Sprintf("%.2f", misc.Cent2Yuan(transaction.ChangeAmount, data.TransactionCents)),
 			transaction.Desc,
 		}, ","))
 	}
@@ -85,7 +85,7 @@ func handleUserTransaction(c *gin.Context) {
 func handleUserTransfer(c *gin.Context) {
 	ticket := c.PostForm("ticket")
 	transactionType := data.TransactionType(misc.ToINT(c.PostForm("transactionType")))
-	amount := misc.ToFloat32(c.PostForm("amount"))
+	amount := int64(misc.ToFloat32(c.PostForm("amount")) * float32(data.TransactionCents))
 	targetUID := uint(misc.ToINT(c.PostForm("targetUID")))
 
 	if amount <= 0 {
@@ -117,7 +117,7 @@ func handleUserTransfer(c *gin.Context) {
 		return
 	}
 
-	var balance, targetBalance float32
+	var balance, targetBalance int64
 
 	userChanges := map[string]interface{}{}
 	targetUserChanges := map[string]interface{}{}
@@ -144,13 +144,13 @@ func handleUserTransfer(c *gin.Context) {
 	}
 
 	if balance < amount {
-		go misc.LarkMarkdownChan(fmt.Sprintf("%s 向 %s %s转账 %.2f 时 余额不足, 当前：%.2f", user.Name, targetUser.Name, data.TransactionTypeMap[transactionType], amount, balance))
+		go misc.LarkMarkdownChan(fmt.Sprintf("%s 向 %s %s转账 %.2f 时 余额不足, 当前：%.2f", user.Name, targetUser.Name, data.TransactionTypeMap[transactionType], misc.Cent2Yuan(amount, data.TransactionCents), misc.Cent2Yuan(balance, data.TransactionCents)))
 
 		c.String(http.StatusOK, "余额不足")
 		return
 	}
 
-	misc.LarkMarkdownChan(fmt.Sprintf("%s 向 %s %s转账 %.2f 当前：%.2f", user.Name, targetUser.Name, data.TransactionTypeMap[transactionType], amount, balance-amount))
+	misc.LarkMarkdownChan(fmt.Sprintf("%s 向 %s %s转账 %.2f 当前：%.2f", user.Name, targetUser.Name, data.TransactionTypeMap[transactionType], misc.Cent2Yuan(amount, data.TransactionCents), misc.Cent2Yuan(balance-amount, data.TransactionCents)))
 
 	if tx := data.DBGet().Model(user).Updates(userChanges); tx.Error != nil {
 		c.String(http.StatusOK, tx.Error.Error())
