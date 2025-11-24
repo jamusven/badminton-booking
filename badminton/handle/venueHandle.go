@@ -6,12 +6,13 @@ import (
 	"badminton-booking/badminton/shard"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func init() {
@@ -48,6 +49,7 @@ func handleVenueCreate(c *gin.Context) {
 	notification := misc.ToINT(c.PostForm("notification"))
 	amount := misc.ToINT(c.PostForm("amount"))
 	limit := misc.ToINT(c.PostForm("limit"))
+	fillType := misc.ToINT(c.PostForm("fillType"))
 
 	venue := &data.Venue{
 		Owner:        user.ID,
@@ -58,6 +60,7 @@ func handleVenueCreate(c *gin.Context) {
 		Notification: notification == 1,
 		Amount:       amount,
 		Limit:        limit,
+		FillType:     fillType,
 	}
 
 	tx := data.DBGet().Create(venue)
@@ -69,11 +72,14 @@ func handleVenueCreate(c *gin.Context) {
 
 	msg := venue.Log(user.Name, "创建了场地", time.Now())
 
-	venue.NotificationMessage(msg)
-	venue.NotificationMessage(fmt.Sprintf("create <at user_id=\"all\">everyone</at>"))
-
 	if venue.Notification {
+		venue.NotificationMessage(msg)
+		venue.NotificationMessage(fmt.Sprintf("create <at user_id=\"all\">everyone</at>"))
 		go misc.Wechat(msg)
+	}
+
+	if venue.FillType == data.VenueFillAuto {
+		go data.VenueAutoFill(venue)
 	}
 
 	c.Redirect(http.StatusMovedPermanently, c.Request.Referer())

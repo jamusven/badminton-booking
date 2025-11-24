@@ -6,12 +6,13 @@ import (
 	"badminton-booking/badminton/shard"
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 func init() {
@@ -76,8 +77,8 @@ func handleAdmin(c *gin.Context) {
 		iStat := stats[iUser.ID]
 		jStat := stats[jUser.ID]
 
-		iWeight := iStat.Day30<<16 | iStat.Day14<<8 | iStat.Day7
-		jWeight := jStat.Day30<<16 | jStat.Day14<<8 | jStat.Day7
+		iWeight := (iStat.Day7 << 8) | (iStat.Day14 << 4) | iStat.Day30
+		jWeight := (jStat.Day7 << 8) | (jStat.Day14 << 4) | jStat.Day30
 
 		if iWeight != jWeight {
 			return iWeight > jWeight

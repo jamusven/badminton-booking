@@ -4,9 +4,12 @@ import (
 	"badminton-booking/badminton/misc"
 	"errors"
 	"fmt"
-	"gorm.io/gorm"
 	"os"
+	"sort"
 	"time"
+
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func init() {
@@ -29,6 +32,7 @@ type Venue struct {
 	BallFee      int64
 	TrainingFee  int64
 	Notification bool `gorm:"default:true"`
+	FillType     int  `gorm:"default:1"`
 }
 
 const LogDir = "logs"
@@ -87,6 +91,11 @@ const (
 	VenueStateCancel
 )
 
+const (
+	VenueFillManual = iota + 1
+	VenueFillAuto
+)
+
 type VenueSummary struct {
 	Venue    *Venue
 	Bookings []*Booking
@@ -125,4 +134,65 @@ func VenueFetchByState(state VenueState) ([]uint, []*Venue) {
 	}
 
 	return ids, venues
+}
+
+func VenueAutoFill(venue *Venue) {
+	userStats := BookingStats()
+	userStatSlice := make([]*BookingStat, 0, len(userStats))
+
+	for _, userStat := range userStats {
+		userStatSlice = append(userStatSlice, userStat)
+	}
+
+	sort.Slice(userStatSlice, func(i, j int) bool {
+		iUserStat := userStatSlice[uint(i)]
+		jUserStat := userStatSlice[uint(j)]
+
+		iWeight := (iUserStat.Day7 << 8) | (iUserStat.Day14 << 4) | iUserStat.Day30
+		jWeight := (jUserStat.Day7 << 8) | (jUserStat.Day14 << 4) | jUserStat.Day30
+
+		return iWeight < jWeight
+	})
+
+	amount := 0
+
+	for _, userStat := range userStatSlice {
+		uid := userStat.UID
+
+		user := UserFetchById(uid)
+
+		if user == nil || user.State == UserStateZombie {
+			continue
+		}
+
+		state := BookingStateOK
+
+		if amount >= venue.Limit {
+			state = BookingStateAuto
+		}
+
+		tx := DBGet().Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "venue_id"}, {Name: "user_id"}, {Name: "worker"}},
+			UpdateAll: true,
+		}).Create(&Booking{
+			VenueID: venue.ID,
+			UserID:  user.ID,
+			Worker:  "",
+			State:   state,
+			Time:    time.Now().Unix(),
+		})
+
+		selectionDesc := venue.Log(user.GetName(""), fmt.Sprintf("系统自动报名 %s", BookingStateMap[state]), time.Now())
+
+		if venue.Notification {
+			misc.LarkMarkdownChan(selectionDesc)
+		}
+
+		amount++
+
+		if tx.Error != nil {
+			misc.LarkMarkdown(fmt.Sprintf("create booking failed: %s", tx.Error.Error()))
+			return
+		}
+	}
 }

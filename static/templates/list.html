@@ -304,11 +304,15 @@
             <legend> 创建场地 </legend>
             <label>
                 <input type="text" placeholder="场地名称" name="name" id="createName">
-                <input type="text" placeholder="场地日期 {{ .NowYMD }}" name="day" id="createDay">
-                <input type="text" placeholder="场地信息 如: 12x2(3 4)" name="desc" value="" id="createDesc">
+                <input type="text" placeholder="场地日期 {{ .NowYMD }}" name="day" id="createDay" size="12">
+                <input type="text" placeholder="场地信息 如: 12x2(3 4)" name="desc" value="" id="createDesc" size="12">
                 <select name="notification">
                     <option value="1">允许通知</option>
                     <option value="0">忽略通知</option>
+                </select>
+                <select name="fillType">
+                    <option value="2">自动报名</option>
+                    <option value="1">手动报名</option>
                 </select>
                 <input type="hidden" name="ticket" value="{{ .Ticket }}">
                 <input type="hidden" name="amount" value="0" id="createAmount">
