@@ -8,10 +8,12 @@ import (
 	"badminton-booking/static"
 	"flag"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	_ "github.com/mattn/go-sqlite3"
 	"html/template"
 	"net/http"
+	"strings"
+
+	"github.com/gin-gonic/gin"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 var debug = flag.Bool("debug", false, "debug mode")
@@ -33,6 +35,8 @@ func main() {
 		"getWeekDay":    misc.GetWeekDay,
 		"now":           misc.Now,
 		"cent2Yuan":     misc.Cent2Yuan,
+		"substr":        misc.Substr,
+		"str2Up":        strings.ToUpper,
 	})
 
 	if *debug {

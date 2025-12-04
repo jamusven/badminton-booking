@@ -87,7 +87,7 @@ func handleAdmin(c *gin.Context) {
 		return iStat.LastTime > jStat.LastTime
 	})
 
-	c.HTML(http.StatusOK, "admin.html", gin.H{
+	h := gin.H{
 		"Title":  title,
 		"Ticket": ticket,
 
@@ -118,7 +118,16 @@ func handleAdmin(c *gin.Context) {
 		"BookingStateMap":    data.BookingStateMap,
 
 		"Settings": shard.SettingExport(),
-	})
+	}
+
+	_json := c.Query("_json")
+
+	if _json != "" {
+		c.JSON(http.StatusOK, h)
+		return
+	}
+
+	c.HTML(http.StatusOK, "admin.html", h)
 }
 
 func handleUserCreate(c *gin.Context) {

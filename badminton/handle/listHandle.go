@@ -4,9 +4,10 @@ import (
 	"badminton-booking/badminton/data"
 	"badminton-booking/badminton/misc"
 	"badminton-booking/badminton/shard"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 func init() {
@@ -30,6 +31,8 @@ func handleList(c *gin.Context) {
 		return
 	}
 
+	json := c.Query("_json")
+
 	user := data.UserFetchByTicket(ticket)
 
 	if user == nil {
@@ -43,7 +46,7 @@ func handleList(c *gin.Context) {
 
 	bookingSummaries := data.BookingSummaryByVenueIds(venueIds)
 
-	c.HTML(http.StatusOK, "list.html", gin.H{
+	h := gin.H{
 		"Title":           title,
 		"Ticket":          ticket,
 		"Alias":           shard.SettingInstance.Alias,
@@ -57,11 +60,12 @@ func handleList(c *gin.Context) {
 		"Users":       users,
 		"UserNameMap": data.UserNameMapGet(),
 
-		"BookingStateOK":     data.BookingStateOK,
-		"BookingStateNO":     data.BookingStateNO,
-		"BookingStateAuto":   data.BookingStateAuto,
-		"BookingStateManual": data.BookingStateManual,
-		"BookingStateMap":    data.BookingStateMap,
+		"BookingStateOK":      data.BookingStateOK,
+		"BookingStateNO":      data.BookingStateNO,
+		"BookingStateAuto":    data.BookingStateAuto,
+		"BookingStateManual":  data.BookingStateManual,
+		"BookingStateExiting": data.BookingStateExiting,
+		"BookingStateMap":     data.BookingStateMap,
 
 		"BookingSummaries": bookingSummaries,
 
@@ -76,7 +80,14 @@ func handleList(c *gin.Context) {
 		"TransactionTypeBalance":  data.TransactionTypeBalance,
 		"TransactionTypeFare":     data.TransactionTypeFare,
 		"TransactionTypeMap":      data.TransactionTypeMap,
-	})
+	}
+
+	if json != "" {
+		c.JSON(http.StatusOK, h)
+		return
+	}
+
+	c.HTML(http.StatusOK, "list1.html", h)
 }
 
 func handleLogin(c *gin.Context) {

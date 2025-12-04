@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ .Title }} - {{ $.Me.Name }}</title>
+    <style>
+        :root {
+            --primary-green: #27ae60;
+            --primary-dark: #219150;
+            --danger-red: #e74c3c;
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+            --text-main: #2c3e50;
+            --text-sub: #7f8c8d;
+            --warning-color: #faad14;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        /* 手机容器模拟 */
+        .app-container {
+            width: 100%;
+            max-width: 420px;
+            background: var(--card-bg);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 20px rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        /* 顶部导航 - 周一三五切换 */
+        .header-tabs {
+            display: flex;
+            background: #fff;
+            padding: 15px 10px 0;
+            border-bottom: 1px solid #eee;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding-bottom: 15px;
+            color: var(--text-sub);
+            font-weight: 500;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            color: var(--primary-green);
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 3px;
+            background: var(--primary-green);
+            border-radius: 3px 3px 0 0;
+        }
+
+        /* 活动信息卡片 */
+        .event-info {
+            padding: 20px;
+            background: linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%);
+            margin: 15px;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.2);
+            color: #1a5d35;
+        }
+
+        .event-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .event-detail {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 5px;
+        }
+
+        .status-badge {
+            background: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: var(--primary-green);
+        }
+
+        /* 进度条 */
+        .progress-section {
+            padding: 0 20px;
+            margin-bottom: 10px;
+        }
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: var(--text-sub);
+            margin-bottom: 8px;
+        }
+        .progress-bar-bg {
+            height: 8px;
+            background: #eee;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--primary-green);
+            border-radius: 4px;
+            width: 0%; /* JS控制 */
+            transition: width 0.5s ease;
+        }
+
+        /* 成员网格列表 */
+        .member-grid-title {
+            padding: 10px 20px 5px;
+            font-weight: bold;
+            color: #333;
+            font-size: 1rem;
+        }
+
+        .member-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            padding: 15px 20px;
+            padding-bottom: 100px; /* 给底部按钮留空间 */
+        }
+
+        .member-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #ddd;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            color: white;
+            border: 3px solid transparent;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* 状态样式：已报名 */
+        .member-item.确认 .avatar {
+            border-color: var(--primary-green);
+            box-shadow: 0 4px 10px rgba(39, 174, 96, 0.3);
+        }
+        .member-item.确认 .status-icon {
+            background: var(--primary-green);
+        }
+
+        /* 状态样式：已拒绝 */
+        .member-item.拒绝 .avatar {
+            filter: grayscale(100%);
+            opacity: 0.5;
+            border: 3px solid #ccc;
+        }
+        .member-item.拒绝 .name {
+            color: #999;
+            text-decoration: line-through;
+        }
+        .member-item.拒绝 .status-icon {
+            background: var(--danger-red);
+        }
+
+        /* 状态样式：待定 */
+        .member-item.替补自动 .avatar {
+            border: 3px dashed #ccc;
+            background: #f9f9f9;
+            color: #ccc;
+        }
+
+        /* 状态样式：待定 */
+        .member-item.替补手动 .avatar {
+            border: 3px dashed #ccc;
+            background: #f9f9f9;
+            color: #ccc;
+        }
+
+        /* 状态样式：待定 */
+        .member-item.下车中 .avatar {
+            border-color: var(--warning-color);
+        }
+
+        .member-item.下车中 .status-icon {
+            background: var(--warning-color);
+        }
+
+        .status-icon {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 10px;
+            color: white;
+        }
+
+        .name {
+            margin-top: 6px;
+            font-size: 0.8rem;
+            color: var(--text-main);
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+        }
+
+        /* 底部操作栏 */
+        .action-bar {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            max-width: 420px;
+            background: white;
+            padding: 15px 20px;
+            box-sizing: border-box;
+            display: flex;
+            gap: 15px;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-confirm {
+            background: var(--primary-green);
+            color: white;
+            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+        }
+
+        .btn-refuse {
+            background: #f8f9fa;
+            color: var(--danger-red);
+            border: 1px solid #eee;
+        }
+
+        .btn-manual {
+            background: #f8f9fa;
+            color: var(--warning-color);
+            border: 1px solid #eee;
+        }
+
+        .venueModal div {
+            margin-bottom: 15px;
+        }
+
+        .profile {
+            padding: 15px 15px 0; /* Align with header tabs padding */
+        }
+
+        .profile-card {
+            background: linear-gradient(135deg, #dfe6e9 0%, #b2bec3 100%);
+            border-radius: 12px;
+            padding: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .profile-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .profile-trade {
+            align-items: center;
+            text-align: center;
+        }
+
+        .balance-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 10px;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .balance-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .balance-item .label {
+            font-size: 0.8rem;
+            color: #7f8c8d;
+        }
+
+        .balance-item .value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="profile">
+        <div class="profile-card">
+            <div class="balance-grid">
+                <div class="balance-item">
+                    <div class="avatar" style="background-color: #3498db; width: 20px; height: 20px;">
+                        {{ substr $.Me.Name 0 1 | str2Up }}
+                    </div>
+                    <div class="name">{{- or (index $.Alias $.Me.Name) $.Me.Name -}}</div>
+                </div>
+
+                <div class="balance-item">
+                    <span class="label">余额</span>
+                    <span class="value">{{- cent2Yuan $.Me.Balance 100 -}}</span>
+                </div>
+
+                <div class="balance-item">
+                    <span class="label">车费</span>
+                    <span class="value">{{- cent2Yuan $.Me.FareBalance 100 -}}</span>
+                </div>
+
+                <div class="balance-item">
+                    <a href="/user/transaction?ticket={{ $.Ticket }}">
+                        交易<br />记录
+                    </a>
+                </div>
+
+                <div class="balance-item">
+                    <form method="post" action="/notification">
+                        <input type="hidden" name="ticket" value="{{ $.Ticket }}">
+                        <input type="hidden" name="text" id="inputGameText">
+                        <input type="button" value="🃏" id="btnHighLow">
+                        <input type="button" value="✋" id="btnRockPaperScissor">
+                        <input type="button" value="🎲" id="btnRollingDice">
+                    </form>
+                </div>
+
+                <div class="balance-item">
+                    <span class="label">打车</span>
+                    <span class="value">{{- cent2Yuan $.Me.FareFee 100 -}}</span>
+                </div>
+
+                <div class="balance-item">
+                    <span class="label">球费</span>
+                    <span class="value">{{- cent2Yuan $.Me.BallFee 100 -}}</span>
+                </div>
+
+                <div class="balance-item">
+                    <span class="label">训练费</span>
+                    <span class="value">{{- cent2Yuan $.Me.TrainingFee 100 -}}</span>
+                </div>
+            </div>
+
+            <div class="profile-trade">
+                <form action="/user/transfer" method="post">
+                    向
+                    <select name="targetUID">
+                        {{ range .Users }}
+                        {{ if ne .State $.UserStateZombie }}
+                        <option value="{{ .ID }}">{{ .Name }}</option>
+                        {{ end }}
+                        {{ end }}
+                    </select>
+                    转账
+                    <select name="transactionType">
+                        <option value="{{ $.TransactionTypeFare }}">{{ index $.TransactionTypeMap $.TransactionTypeFare }}</option>
+                        <option value="{{ $.TransactionTypeBalance }}">{{ index $.TransactionTypeMap $.TransactionTypeBalance }}</option>
+                    </select>
+                    <input name="amount" placeholder="金额" size="6" min="0" max="9999" />
+                    <input type="hidden" name="ticket" value="{{ $.Ticket }}" />
+                    <input type="submit" value="确认" />
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 顶部Tab -->
+    <div class="header-tabs">
+        {{ range $index, $venue := .Venues }}
+        {{ $isActive := eq $index 0 }}
+        <div class="tab{{ if $isActive }} active{{ end }}" onclick="switchTab({{- $index -}})">{{- $venue.Day -}}</div>
+        {{ end }}
+    </div>
+
+    <!-- 活动信息 -->
+    <div class="event-info">
+        <div class="event-title">
+            <span id="dayTitle">待创建场地</span>
+            {{ if or (eq $.UserStateAdmin ($.Me.State)) (eq .Owner ($.Me.ID))  }}
+            <span class="status-badge" onclick="venueChange()">修改</span>
+            <span class="status-badge" onclick="venueDone()">结束</span>
+            {{ end }}
+        </div>
+        <div class="event-detail">
+            <span>📍</span><span id="eventName">默认场地名</span>
+            | <span class="status-badge" onclick="venueCreate()">创建活动</span>
+        </div>
+        <div class="event-detail">
+            <span>⏰</span><span id="eventDesc">默认描述</span>
+        </div>
+    </div>
+
+    <!-- 进度统计 -->
+    <div class="progress-section">
+        <div class="progress-header">
+            <span>已报名人数</span>
+            <span id="countText">0 / 0</span>
+        </div>
+        <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="progressBar"></div>
+        </div>
+    </div>
+
+    <!-- 成员列表 -->
+    <div class="member-grid-title">
+        <span id="memberGridText">成员列表</span>
+        <span class="status-badge" onclick="venueStat('stat')">统计通知</span>
+        <span class="status-badge" onclick="venueStat('depart')">出发通知</span>
+    </div>
+    <div class="member-grid" id="memberGrid">
+        <!-- JS 生成 -->
+    </div>
+
+    <!-- 底部按钮 -->
+    <div class="action-bar">
+        <button class="btn btn-refuse" onclick="userAction(bookingStateNO)">
+            <span>✕</span> 没空
+        </button>
+        <button class="btn btn-manual" onclick="userAction(bookingStateManual)">
+            <span>?</span> 待定
+        </button>
+        <button class="btn btn-confirm" onclick="userAction(bookingStateOK)">
+            <span>✓</span> 确认
+        </button>
+
+    </div>
+</div>
+
+<script>
+    class HttpService {
+        static async request(url, options = {}) {
+            const defaultOptions = {
+                timeout: 10000,
+                credentials: 'include'
+            };
+
+            const config = { ...defaultOptions, ...options };
+
+            if (config.body instanceof FormData) {
+                if (config.headers) {
+                    delete config.headers['Content-Type'];
+                }
+            }
+
+            try {
+                const response = await fetch(url, config);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    return await response.json();
+                }
+                return await response.text();
+
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    throw new Error('请求超时');
+                }
+                throw error;
+            }
+        }
+
+        static async post(url, data) {
+            return this.request(url, {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+        }
+
+        static async postForm(url, data) {
+            return this.request(url, {
+                method: 'POST',
+                body: data
+            });
+        }
+
+        static async put(url, data) {
+            return this.request(url, {
+                method: 'PUT',
+                body: JSON.stringify(data)
+            });
+        }
+
+        static async get(url) {
+            return this.request(url, { method: 'GET' });
+        }
+
+        static async delete(url) {
+            return this.request(url, { method: 'DELETE' });
+        }
+    }
+
+    const alias = {{ .Alias }};
+    const users = {{ .Users }};
+    const userName = "{{- $.Me.Name -}}";
+    const bookingSummaries = {{ .BookingSummaries }};
+    const venues = {{ .Venues }};
+    const userNameMap = {{ .UserNameMap }};
+    const userNameMapFlip = Object.fromEntries(Object.entries(userNameMap).map(([k, v]) => [v, k]));
+    const bookingStateMap = {{ .BookingStateMap }};
+    const bookingStateOK = {{ .BookingStateOK }};
+    const bookingStateNO = {{ .BookingStateNO }};
+    const bookingStateAuto = {{ .BookingStateAuto }};
+    const bookingStateManual = {{ .BookingStateManual }};
+    const bookingStateExiting = {{ .BookingStateExiting }};
+    const userStateZombie = {{ .UserStateZombie }};
+    const venueBookingMap = {{ .VenueBookingMap }};
+
+    const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+    let currentDayIndex = parseInt(localStorage.getItem("currentDayIndex")) || 0;
+
+    if(currentDayIndex < 0 || currentDayIndex >= venues.length) {
+        currentDayIndex = 0;
+    }
+
+    function init() {
+        render();
+    }
+
+    function switchTab(index) {
+        currentDayIndex = index;
+        localStorage.setItem("currentDayIndex", currentDayIndex);
+
+        // 更新 Tab 样式
+        document.querySelectorAll('.tab').forEach((el, i) => {
+            if(i === index) el.classList.add('active');
+            else el.classList.remove('active');
+        });
+
+        render();
+    }
+
+    function render() {
+        const grid = document.getElementById('memberGrid');
+        grid.innerHTML = '';
+
+        let venue = venues[currentDayIndex];
+
+        if (venue === undefined) {
+            return;
+        }
+
+        let venueDay = new Date(venue.Day);
+
+        let venueDayIndex = venueDay.getDay();
+
+        document.getElementById('dayTitle').innerText = venue.Day + " " + daysOfWeek[venueDayIndex];
+        document.getElementById('eventName').innerText = venue.Name;
+        document.getElementById('eventDesc').innerText = venue.Desc;
+
+        let joinedCount = 0;
+        let currentMembers = [];
+        let memberMap = [];
+
+        bookingSummaries[venue.ID].Answers.forEach((item, index) => {
+            let name = userNameMapFlip[item.UserID];
+
+            if (name === undefined) {
+                return;
+            }
+
+            if (alias[name] !== undefined) {
+                name = alias[name];
+            }
+
+            if (item.Worker !== "") {
+                name = item.Worker + "("+name+")";
+            }
+
+            currentMembers.push({
+                name: name,
+                status: item.State,
+                statusText: bookingStateMap[item.State],
+                avatar: userNameMapFlip[item.UserID].charAt(0).toUpperCase()
+            });
+
+            memberMap[userNameMapFlip[item.UserID]] = true;
+        });
+
+        users.forEach(user => {
+            if (user.State === userStateZombie || memberMap[user.Name] !== undefined) {
+               return;
+            }
+
+            currentMembers.push({
+                name: (alias[user.Name] !== undefined) ? alias[user.Name] : user.Name,
+                status: bookingStateManual,
+                statusText: bookingStateMap[bookingStateManual],
+                avatar: user.Name.charAt(0).toUpperCase()
+            });
+        });
+
+        document.getElementById('memberGridText').innerText = `成员列表 (${currentMembers.length} 人)`;
+
+        currentMembers.forEach(member => {
+            let isOk = member.status === bookingStateOK || member.status === bookingStateAuto;
+
+            if (isOk) joinedCount++;
+
+            const el = document.createElement('div');
+            el.className = `member-item ${member.statusText}`;
+
+            // 状态图标逻辑
+            let statusIconHtml = '';
+            if(member.status === bookingStateOK) statusIconHtml = '<div class="status-icon" style="background:var(--primary-green)">✓</div>';
+            else if(member.status === bookingStateNO) statusIconHtml = '<div class="status-icon" style="background:var(--danger-red)">✕</div>';
+            else if(member.status === bookingStateAuto) statusIconHtml = '<div class="status-icon" style="background:var(--primary-dark)">?</div>';
+            else if(member.status === bookingStateExiting) statusIconHtml = '<div class="status-icon" style="background:var(--warning-color)">↓</div>';
+
+            let isPending = member.status === bookingStateManual;
+
+            // 头像颜色逻辑 (简单的随机色模拟)
+            const bgColors = ['#f1c40f', '#e67e22', '#3498db', '#9b59b6', '#1abc9c', '#34495e'];
+            const bg = (isPending) ? '#eee' : bgColors[member.avatar.charCodeAt(0) % bgColors.length];
+
+            el.innerHTML = `
+                    <div class="avatar" style="background-color: ${bg}">
+                        ${member.avatar}
+                        ${statusIconHtml}
+                    </div>
+                    <div class="name">${member.name}</div>
+                `;
+            grid.appendChild(el);
+        });
+
+        // 更新进度条和计数
+        document.getElementById('countText').innerText = `${joinedCount} / ${venue.Limit}`;
+        const percentage = (joinedCount / venue.Limit) * 100;
+        document.getElementById('progressBar').style.width = `${percentage}%`;
+
+        // 颜色变化：如果人满了变成红色警告，否则绿色
+        document.getElementById('progressBar').style.backgroundColor = joinedCount >= venue.Limit ? '#e74c3c' : '#27ae60';
+    }
+
+    const inputGameText = document.getElementById('inputGameText');
+
+    document.getElementById('btnHighLow').onclick = function () {
+        let random = Math.floor(Math.random() * 100) + 1;
+
+        inputGameText.value = " 比大小 " + userName + " " + random;
+        inputGameText.parentNode.submit();
+    };
+
+    document.getElementById('btnRockPaperScissor').onclick = function () {
+        let random = Math.floor(Math.random() * 3);
+        let mapping = ["✌️", "✊", "🖐️"];
+
+        inputGameText.value = " 剪刀布 " +  userName + " " + mapping[random];
+        inputGameText.parentNode.submit();
+    };
+
+    document.getElementById('btnRollingDice').onclick = function () {
+        let numbers = [];
+
+        for (let i = 0 ; i < 3; i++) {
+            let random = Math.floor(Math.random() * 6) + 1;
+            numbers.push(random);
+        }
+
+        inputGameText.value = " 摇骰子 " + userName + " " + numbers.join(" ") + " = " + numbers.reduce((a, b) => a + b, 0);
+        inputGameText.parentNode.submit();
+    };
+
+    // 触摸滑动功能
+    let startX = 0;
+    let currentX = 0;
+    let isSwiping = false;
+
+    document.body.addEventListener('touchstart', function(e) {
+        startX = e.touches[0].clientX;
+        isSwiping = true;
+    });
+
+    document.body.addEventListener('touchmove', function(e) {
+        if (!isSwiping) return;
+        currentX = e.touches[0].clientX;
+    });
+
+    document.body.addEventListener('touchend', function() {
+        if (!isSwiping) return;
+
+        const diffX = startX - currentX;
+        const threshold = 50; // 滑动阈值
+        let newTabIndex = currentDayIndex;
+
+        if (Math.abs(diffX) > threshold) {
+            if (diffX > 0) {
+                newTabIndex = newTabIndex - 1
+            } else {
+                newTabIndex = newTabIndex + 1
+            }
+
+            if (newTabIndex >= venues.length) {
+                newTabIndex = 0
+            }
+
+            if (newTabIndex < 0) {
+                newTabIndex = venues.length - 1
+            }
+
+            switchTab(newTabIndex);
+        }
+
+        isSwiping = false;
+    });
+
+    function venueCreate() {
+        let venue = {
+            "Day": "",
+            "Name": "",
+            "Desc": "",
+            "Amount": 0,
+            "Limit": 0,
+        };
+
+        if (venues.length > 0) {
+            let venueDay = new Date(venues[venues.length - 1].Day);
+            let venueDayIndex = venueDay.getDay();
+            let daysSearched = 0;
+
+            while(daysSearched < 7) {
+                daysSearched++;
+                venueDayIndex = (venueDayIndex + 1) % 7
+                let nextDayName = daysOfWeek[venueDayIndex];
+
+                if (venueBookingMap[nextDayName]) {
+                    let nextDay = venueDay.setDate(venueDay.getDate() + daysSearched);
+
+                    venue.Day = new Date(nextDay).toISOString().split('T')[0];
+                    venue.Name = venueBookingMap[nextDayName].name;
+                    venue.Desc = venueBookingMap[nextDayName].desc;
+                    venue.Amount = venueBookingMap[nextDayName].amount;
+                    venue.Limit = venueBookingMap[nextDayName].limit;
+
+                    break;
+                }
+            }
+        }
+
+        // 创建修改模态框
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    `;
+
+        modal.innerHTML = `
+        <div class="venueModal" style="background: white; padding: 20px; border-radius: 8px; width: 100%; ">
+            <h3>创建活动信息</h3>
+            <form id="venueForm">
+                <div>
+                    <label>活动日期:</label>
+                    <input type="date" name="day" value="${venue.Day}" size="16" >
+                </div>
+
+                <div>
+                    <label>活动地点:</label>
+                    <input type="text" name="name" value="${venue.Name}" size="16" >
+                </div>
+
+                <div>
+                    <label>时间描述:</label>
+                    <input type="text" name="desc" value="${venue.Desc}" size="16" >
+                    <small style="color: #666;">格式示例: 12 * 2(1层4 6) 表示12点开始，2小时，1层4、6号场地</small>
+                </div>
+
+                <div>
+                    <label>最少人数:</label>
+                    <input type="number" name="amount" value="${venue.Amount}" min="0" max="20" size="8" >
+                </div>
+
+                <div>
+                    <label>最大人数:</label>
+                    <input type="number" name="limit" value="${venue.Limit}" min="0" max="20" size="8" >
+                </div>
+
+                <div>
+                    <select name="notification">
+                        <option value="1">允许通知</option>
+                        <option value="0">忽略通知</option>
+                    </select>
+                    <select name="fillType">
+                        <option value="2">自动报名</option>
+                        <option value="1">手动报名</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+                    <input type="hidden" name="ticket" value="{{- $.Ticket -}}">
+                    <button type="button" onclick="closeModal()" style="padding: 8px 16px; background: #ccc; border: none; border-radius: 4px;">取消</button>
+                    <button type="submit" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px;">创建</button>
+                </div>
+            </form>
+        </div>
+    `;
+
+        document.body.appendChild(modal);
+
+        // 表单提交处理
+        modal.querySelector('#venueForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            try {
+                // let data = Object.fromEntries(new FormData(e.target).entries());
+                let result = await HttpService.postForm('/venue/create', new FormData(e.target));
+
+                console.log('保存成功:', result);
+                closeModal();
+
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } catch (error) {
+                alert('修改失败，请稍后重试。');
+            } finally {
+                closeModal();
+
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            }
+        });
+
+        // 关闭模态框函数
+        window.closeModal = function() {
+            document.body.removeChild(modal);
+            delete window.closeModal;
+        };
+    }
+
+    function venueChange() {
+        let venue = venues[currentDayIndex];
+
+        // 创建修改模态框
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    `;
+
+        modal.innerHTML = `
+        <div class="venueModal" style="background: white; padding: 20px; border-radius: 8px; width: 100%; ">
+            <h3>修改活动信息</h3>
+            <form id="venueForm">
+                <div>
+                    <label>活动日期:</label>
+                    <input type="date" name="day" value="${venue.Day}" size="16" >
+                </div>
+
+                <div>
+                    <label>活动地点:</label>
+                    <input type="text" name="name" value="${venue.Name}" size="16" >
+                </div>
+
+                <div>
+                    <label>时间描述:</label>
+                    <input type="text" name="desc" value="${venue.Desc}" size="16" >
+                    <small style="color: #666;">格式示例: 12 * 2(1层4 6) 表示12点开始，2小时，1层4、6号场地</small>
+                </div>
+
+                <div>
+                    <label>最少人数:</label>
+                    <input type="number" name="amount" value="${venue.Amount}" min="0" max="20" size="8" >
+                </div>
+
+                <div>
+                    <label>最大人数:</label>
+                    <input type="number" name="limit" value="${venue.Limit}" min="0" max="20" size="8" >
+                </div>
+
+                <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+                    <input type="hidden" name="venueId" value="${venue.ID}">
+                    <input type="hidden" name="ticket" value="{{- $.Ticket -}}">
+                    <button type="button" onclick="closeModal()" style="padding: 8px 16px; background: #ccc; border: none; border-radius: 4px;">取消</button>
+                    <button type="submit" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px;">保存修改</button>
+                </div>
+            </form>
+        </div>
+    `;
+
+        document.body.appendChild(modal);
+
+        // 表单提交处理
+        modal.querySelector('#venueForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            try {
+                // let data = Object.fromEntries(new FormData(e.target).entries());
+                let result = await HttpService.postForm('/venue/limit', new FormData(e.target));
+
+                console.log('保存成功:', result);
+                closeModal();
+
+                window.location.reload();
+            } catch (error) {
+                alert('修改失败，请稍后重试。');
+            } finally {
+                closeModal();
+
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            }
+        });
+
+        // 关闭模态框函数
+        window.closeModal = function() {
+            document.body.removeChild(modal);
+            delete window.closeModal;
+        };
+    }
+
+    function venueDone() {
+        let venue = venues[currentDayIndex];
+
+        // 创建修改模态框
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    `;
+
+        modal.innerHTML = `
+        <div class="venueModal" style="background: white; padding: 20px; border-radius: 8px; width: 100%; ">
+            <h3>结束活动信息</h3>
+
+            <form id="venueForm">
+                <input type="hidden" name="venueId" value="${venue.ID}">
+                <input type="hidden" name="ticket" value="{{- $.Ticket -}}">
+
+                <div>
+                    <label>场地费:</label>
+                    <input type="text" size="6" name="venueFee" placeholder="场地费">
+                </div>
+
+                <div>
+                    <label>球费:</label>
+                    <input type="text" size="6" name="ballFee" placeholder="球费">
+                </div>
+
+                <div>
+                    <label>训练费:</label>
+                    <input type="text" size="6" name="trainingFee" placeholder="训练费">
+                </div>
+
+                <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+                    <button type="button" onclick="closeModal()" style="padding: 8px 16px; background: #ccc; border: none; border-radius: 4px;">取消</button>
+                    <button type="submit" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px;">保存修改</button>
+                </div>
+            </form>
+        </div>
+    `;
+
+        document.body.appendChild(modal);
+
+        // 表单提交处理
+        modal.querySelector('#venueForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            try {
+                // let data = Object.fromEntries(new FormData(e.target).entries());
+                let result = await HttpService.postForm('/venue/done', new FormData(e.target));
+
+                console.log('保存成功:', result);
+                closeModal();
+
+                window.location.reload();
+            } catch (error) {
+                alert('修改失败，请稍后重试。');
+            } finally {
+                closeModal();
+
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            }
+        });
+
+        // 关闭模态框函数
+        window.closeModal = function() {
+            document.body.removeChild(modal);
+            delete window.closeModal;
+        };
+    }
+
+    async function venueStat(op) {
+        let venue = venues[currentDayIndex];
+
+        if (venue === undefined) {
+            return;
+        }
+
+        try {
+            let formData = new FormData();
+            formData.set('venueId', venue.ID);
+            formData.set('ticket', '{{- $.Ticket -}}');
+            let result = await HttpService.postForm('/venue/' + op, formData);
+        } catch (error) {
+            alert('修改失败，请稍后重试。');
+        } finally {
+
+        }
+    }
+
+    // 模拟用户操作
+    async function userAction(action) {
+        render();
+
+        const btnClassMap = {
+            [bookingStateOK]: '.btn-confirm',
+            [bookingStateNO]: '.btn-refuse',
+            [bookingStateManual]: '.btn-manual'
+        };
+
+        // 简单的交互反馈
+        const btn = document.querySelector(btnClassMap[action]);
+        const originalText = btn.innerText;
+        btn.innerText = '已提交';
+
+        try {
+            let worker = prompt("外挂姓名，自己报名留空即可：", "");
+
+            // let data = Object.fromEntries(new FormData(e.target).entries());
+            let formData = new FormData();
+            formData.set('venueId', venues[currentDayIndex].ID);
+            formData.set('ticket', '{{- $.Ticket -}}');
+            formData.set('state', action);
+            formData.set('worker', worker === null ? "" : worker);
+
+            let result = await HttpService.postForm('/venue/booking', formData);
+
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } catch (error) {
+            alert('修改失败，请稍后重试。');
+        } finally {
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        }
+    }
+
+    currentDayIndex === 0 ? init() : switchTab(currentDayIndex);
+
+    let leaveTime = 0; // 记录离开的时间
+
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'hidden') {
+            // 记录离开时的当前时间戳
+            leaveTime = new Date().getTime();
+        } else if (document.visibilityState === 'visible') {
+            // 计算现在和离开时的时间差
+            const now = new Date().getTime();
+            const duration = now - leaveTime;
+
+            // 如果离开时间超过 5000 毫秒 (5秒)，则刷新
+            // 注意：leaveTime > 0 是为了防止页面刚加载时触发
+            if (leaveTime > 0 && duration > 5000) {
+                location.reload();
+            }
+        }
+    });
+
+</script>
+</body>
+</html>

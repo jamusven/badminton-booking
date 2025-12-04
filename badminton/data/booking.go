@@ -4,9 +4,10 @@ import (
 	"badminton-booking/badminton/misc"
 	"errors"
 	"fmt"
-	"gorm.io/gorm"
 	"strings"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 func init() {
@@ -229,7 +230,7 @@ func BookingSummaryByVenueIds(ids []uint) map[uint]*BookingSummary {
 
 	var bookings []Booking
 
-	tx := DBGet().Order("time asc").Find(&bookings, "venue_id in (?)", ids)
+	tx := DBGet().Order("time asc, id asc").Find(&bookings, "venue_id in (?)", ids)
 
 	if tx.Error != nil {
 		panic(tx.Error)

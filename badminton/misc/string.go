@@ -48,3 +48,18 @@ func ToJsonPrettify(data interface{}) string {
 
 	return string(b)
 }
+
+func Substr(str string, start int, length int) string {
+	runes := []rune(str)
+
+	if start >= len(runes) {
+		return ""
+	}
+
+	end := start + length
+
+	if end > len(runes) {
+		end = len(runes)
+	}
+	return string(runes[start:end])
+}
