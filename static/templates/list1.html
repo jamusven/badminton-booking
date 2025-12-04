@@ -596,6 +596,7 @@
     const bookingStateExiting = {{ .BookingStateExiting }};
     const userStateZombie = {{ .UserStateZombie }};
     const venueBookingMap = {{ .VenueBookingMap }};
+    const ticket = new URLSearchParams(window.location.search).get('ticket');
 
     const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -886,7 +887,7 @@
                 </div>
 
                 <div style="display: flex; justify-content: space-between; margin-top: 20px;">
-                    <input type="hidden" name="ticket" value="{{- $.Ticket -}}">
+                    <input type="hidden" name="ticket" value="${ticket}">
                     <button type="button" onclick="closeModal()" style="padding: 8px 16px; background: #ccc; border: none; border-radius: 4px;">取消</button>
                     <button type="submit" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px;">创建</button>
                 </div>
@@ -978,7 +979,7 @@
 
                 <div style="display: flex; justify-content: space-between; margin-top: 20px;">
                     <input type="hidden" name="venueId" value="${venue.ID}">
-                    <input type="hidden" name="ticket" value="{{- $.Ticket -}}">
+                    <input type="hidden" name="ticket" value="${ticket}">
                     <button type="button" onclick="closeModal()" style="padding: 8px 16px; background: #ccc; border: none; border-radius: 4px;">取消</button>
                     <button type="submit" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px;">保存修改</button>
                 </div>
@@ -1042,7 +1043,7 @@
 
             <form id="venueForm">
                 <input type="hidden" name="venueId" value="${venue.ID}">
-                <input type="hidden" name="ticket" value="{{- $.Ticket -}}">
+                <input type="hidden" name="ticket" value="${ticket}">
 
                 <div>
                     <label>场地费:</label>
@@ -1109,7 +1110,7 @@
         try {
             let formData = new FormData();
             formData.set('venueId', venue.ID);
-            formData.set('ticket', '{{- $.Ticket -}}');
+            formData.set('ticket', ticket);
             let result = await HttpService.postForm('/venue/' + op, formData);
         } catch (error) {
             alert('修改失败，请稍后重试。');
@@ -1139,7 +1140,7 @@
             // let data = Object.fromEntries(new FormData(e.target).entries());
             let formData = new FormData();
             formData.set('venueId', venues[currentDayIndex].ID);
-            formData.set('ticket', '{{- $.Ticket -}}');
+            formData.set('ticket', ticket);
             formData.set('state', action);
             formData.set('worker', worker === null ? "" : worker);
 
