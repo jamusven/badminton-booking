@@ -761,6 +761,7 @@
 
     document.body.addEventListener('touchstart', function(e) {
         startX = e.touches[0].clientX;
+        currentX = startX;
         isSwiping = true;
     });
 
@@ -778,9 +779,9 @@
 
         if (Math.abs(diffX) > threshold) {
             if (diffX > 0) {
-                newTabIndex = newTabIndex - 1
-            } else {
                 newTabIndex = newTabIndex + 1
+            } else {
+                newTabIndex = newTabIndex - 1
             }
 
             if (newTabIndex >= venues.length) {
