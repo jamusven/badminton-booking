@@ -311,6 +311,16 @@
             border: 1px solid #eee;
         }
 
+        .btn-custom {
+            background: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            border:0;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: var(--primary-green);
+        }
+
         .venueModal div {
             margin-bottom: 15px;
         }
@@ -465,13 +475,14 @@
         <div class="event-title">
             <span id="dayTitle">待创建场地</span>
             {{ if or (eq $.UserStateAdmin ($.Me.State)) (eq .Owner ($.Me.ID))  }}
-            <span class="status-badge" onclick="venueChange()">修改</span>
-            <span class="status-badge" onclick="venueDone()">结束</span>
+            <input type="button" class="btn-custom" onclick="venueChange()" value="修改">
+            <input type="button" class="btn-custom" onclick="venueDone()" value="结束">
             {{ end }}
         </div>
         <div class="event-detail">
             <span>📍</span><span id="eventName">默认场地名</span>
-            | <span class="status-badge" onclick="venueCreate()">创建活动</span>
+            | <input type="button" class="btn-custom" onclick="venueCreate()" value="创建活动">
+
         </div>
         <div class="event-detail">
             <span>⏰</span><span id="eventDesc">默认描述</span>
@@ -492,8 +503,9 @@
     <!-- 成员列表 -->
     <div class="member-grid-title">
         <span id="memberGridText">成员列表</span>
-        <span class="status-badge" onclick="venueStat('stat')">统计通知</span>
-        <span class="status-badge" onclick="venueStat('depart')">出发通知</span>
+        <input type="button" class="btn-custom" onclick="venueStat('history')" value="报名日志">
+        <input type="button" class="btn-custom" onclick="venueStat('stat')" value="统计通知">
+        <input type="button" class="btn-custom" onclick="venueStat('depart')" value="出发通知">
     </div>
     <div class="member-grid" id="memberGrid">
         <!-- JS 生成 -->
@@ -731,6 +743,7 @@
         let random = Math.floor(Math.random() * 100) + 1;
 
         inputGameText.value = " 比大小 " + userName + " " + random;
+        alert(inputGameText.value);
         inputGameText.parentNode.submit();
     };
 
@@ -739,6 +752,7 @@
         let mapping = ["✌️", "✊", "🖐️"];
 
         inputGameText.value = " 剪刀布 " +  userName + " " + mapping[random];
+        alert(inputGameText.value);
         inputGameText.parentNode.submit();
     };
 
@@ -751,6 +765,7 @@
         }
 
         inputGameText.value = " 摇骰子 " + userName + " " + numbers.join(" ") + " = " + numbers.reduce((a, b) => a + b, 0);
+        alert(inputGameText.value);
         inputGameText.parentNode.submit();
     };
 
@@ -1108,6 +1123,11 @@
             return;
         }
 
+        if (op === 'history') {
+            window.location.href = '/logs/'+ venue.ID +'.log?_time=' + new Date().getTime();
+            return;
+        }
+
         try {
             let formData = new FormData();
             formData.set('venueId', venue.ID);
@@ -1116,14 +1136,11 @@
         } catch (error) {
             alert('修改失败，请稍后重试。');
         } finally {
-
         }
     }
 
     // 模拟用户操作
     async function userAction(action) {
-        render();
-
         const btnClassMap = {
             [bookingStateOK]: '.btn-confirm',
             [bookingStateNO]: '.btn-refuse',

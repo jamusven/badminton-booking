@@ -48,7 +48,7 @@ func (this *Venue) Log(userName string, event string, time time.Time) string {
 		os.Mkdir(LogDir, 0755)
 	}
 
-	fileName := fmt.Sprintf("%s/%s.log", LogDir, misc.Sha1(misc.ToString(int(this.ID))))
+	fileName := fmt.Sprintf("%s/%d.log", LogDir, this.ID)
 
 	if userName == "" && event == "" {
 		if err := os.Remove(fileName); err != nil {
