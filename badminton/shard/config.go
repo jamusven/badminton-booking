@@ -27,10 +27,11 @@ type Wechat struct {
 }
 
 type VenueBooking struct {
-	Name   string `json:"name"`
-	Desc   string `json:"desc"`
-	Amount int32  `json:"amount"`
-	Limit  int32  `json:"limit"`
+	Name     string `json:"name"`
+	Desc     string `json:"desc"`
+	Amount   int32  `json:"amount"`
+	Limit    int32  `json:"limit"`
+	VenueFee int32  `json:"venueFee"`
 }
 
 var SettingInstance *Setting

@@ -96,11 +96,6 @@ const (
 	VenueFillAuto
 )
 
-type VenueSummary struct {
-	Venue    *Venue
-	Bookings []*Booking
-}
-
 func VenueFetchById(id uint) *Venue {
 	var venue Venue
 
@@ -137,34 +132,69 @@ func VenueFetchByState(state VenueState) ([]uint, []*Venue) {
 }
 
 func VenueAutoFill(venue *Venue) {
-	userStats := BookingStats()
-	userStatSlice := make([]*BookingStat, 0, len(userStats))
+	var venues []Venue
+	var venueIds []uint
 
-	for _, userStat := range userStats {
-		userStatSlice = append(userStatSlice, userStat)
+	tx := DBGet().Select("ID, day").Order("ID DESC").Limit(5).Find(&venues, "state != ?", VenueStateCancel)
+
+	if tx.Error != nil && errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+		panic(tx.Error)
 	}
 
-	sort.Slice(userStatSlice, func(i, j int) bool {
-		iUserStat := userStatSlice[uint(i)]
-		jUserStat := userStatSlice[uint(j)]
+	for _, venue := range venues {
+		venueIds = append(venueIds, venue.ID)
+	}
 
-		iWeight := (iUserStat.Day7 << 8) | (iUserStat.Day14 << 4) | iUserStat.Day30
-		jWeight := (jUserStat.Day7 << 8) | (jUserStat.Day14 << 4) | jUserStat.Day30
+	var bookings []Booking
 
-		return iWeight < jWeight
+	tx = DBGet().Find(&bookings, "venue_id IN ? and worker = ''", venueIds)
+
+	if tx.Error != nil {
+		panic(tx.Error)
+	}
+
+	var userCounter = make(map[uint]int)
+
+	for _, booking := range bookings {
+		if booking.State != BookingStateOK {
+			continue
+		}
+
+		if _, ok := userCounter[booking.UserID]; !ok {
+			userCounter[booking.UserID] = 0
+		}
+
+		userCounter[booking.UserID] += 1
+	}
+
+	var users []*User
+	userList := UserFetchAll()
+
+	for _, user := range userList {
+		if !user.IsActive() {
+			continue
+		}
+
+		users = append(users, user)
+	}
+
+	sort.Slice(users, func(i, j int) bool {
+		var iCount, jCount int
+
+		if count, ok := userCounter[users[i].ID]; ok {
+			iCount = count
+		}
+
+		if count, ok := userCounter[users[j].ID]; ok {
+			jCount = count
+		}
+
+		return iCount < jCount
 	})
 
 	amount := 0
 
-	for _, userStat := range userStatSlice {
-		uid := userStat.UID
-
-		user := UserFetchById(uid)
-
-		if user == nil || user.State == UserStateZombie {
-			continue
-		}
-
+	for _, user := range users {
 		state := BookingStateOK
 
 		if amount >= venue.Limit {

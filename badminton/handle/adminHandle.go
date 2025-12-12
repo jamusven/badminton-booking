@@ -58,7 +58,7 @@ func handleAdmin(c *gin.Context) {
 	for _, user := range users {
 		userTotalAmt++
 
-		if user.State == data.UserStateZombie {
+		if !user.IsActive() {
 			userZombieAmt++
 		} else {
 			userActiveAmt++

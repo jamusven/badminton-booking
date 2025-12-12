@@ -1038,6 +1038,15 @@
     function venueDone() {
         let venue = venues[currentDayIndex];
 
+        let venueDay = new Date(venue.Day);
+        let venueDayIndex = venueDay.getDay();
+        let weekDayName = daysOfWeek[venueDayIndex];
+        let venueFee = '';
+
+        if (venueBookingMap[weekDayName] !== undefined && venueBookingMap[weekDayName].venueFee > 0) {
+            venueFee = venueBookingMap[weekDayName].venueFee;
+        }
+
         // 创建修改模态框
         const modal = document.createElement('div');
         modal.style.cssText = `
@@ -1063,7 +1072,7 @@
 
                 <div>
                     <label>场地费:</label>
-                    <input type="text" size="6" name="venueFee" placeholder="场地费">
+                    <input type="text" size="6" name="venueFee" placeholder="场地费" value="${venueFee}">
                 </div>
 
                 <div>

@@ -2,6 +2,7 @@ package data
 
 import (
 	"fmt"
+
 	"gorm.io/gorm"
 )
 
@@ -38,6 +39,10 @@ func (this *User) GetName(worker string) string {
 	} else {
 		return fmt.Sprintf("%s(%s)", worker, this.Name)
 	}
+}
+
+func (this *User) IsActive() bool {
+	return this.State != UserStateZombie
 }
 
 type UserState int

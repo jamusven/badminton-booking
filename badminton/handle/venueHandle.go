@@ -539,7 +539,7 @@ func handleVenueStat(c *gin.Context) {
 	var unselected []string
 
 	for _, user := range users {
-		if user.State == data.UserStateZombie {
+		if !user.IsActive() {
 			continue
 		}
 

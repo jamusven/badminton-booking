@@ -207,11 +207,7 @@ func BookingSummaryByVenueIds(ids []uint) map[uint]*BookingSummary {
 		return bookingSummaries
 	}
 
-	_ids := []string{}
-
 	for _, v := range ids {
-		_ids = append(_ids, misc.ToString(int(v)))
-
 		bookingSummary := &BookingSummary{
 			VenueID:         v,
 			Answers:         []*Booking{},
@@ -244,8 +240,11 @@ func BookingSummaryByVenueIds(ids []uint) map[uint]*BookingSummary {
 
 		bookingSummary.Answers = append(bookingSummary.Answers, &bookings[i])
 		bookingSummary.AnswerCounter[answer]++
-		bookingSummary.AnswerResponses[answer] = append(bookingSummary.AnswerResponses[answer], user.GetName(booking.Worker))
-		bookingSummary.AnswerValues[user.GetName(booking.Worker)] = booking.State
+
+		name := user.GetName(booking.Worker)
+
+		bookingSummary.AnswerResponses[answer] = append(bookingSummary.AnswerResponses[answer], name)
+		bookingSummary.AnswerValues[name] = booking.State
 	}
 
 	return bookingSummaries
