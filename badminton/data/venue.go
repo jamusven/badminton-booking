@@ -192,6 +192,14 @@ func VenueAutoFill(venue *Venue) {
 		return iCount < jCount
 	})
 
+	for index, user := range users {
+		if user.ID == venue.Owner && index >= venue.Limit {
+			users = append(users[:index], users[index+1:]...)
+			users = append(users[:venue.Limit-1], append([]*User{user}, users[venue.Limit-1:]...)...)
+			break
+		}
+	}
+
 	amount := 0
 
 	for _, user := range users {

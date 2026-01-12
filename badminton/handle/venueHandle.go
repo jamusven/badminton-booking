@@ -389,7 +389,13 @@ func handleVenueDone(c *gin.Context) {
 		avgBallFee := ballFee / int64(len(list))
 		avgTrainingFee := trainingFee / int64(len(list))
 
-		msg := venue.Log(user.Name, fmt.Sprintf("[%s] 场地已结束，人均约 %.2f 元. \n人员：%s", venue.Desc, misc.Cent2Yuan(avgVenueFee+avgBallFee, data.TransactionCents), strings.Join(list, "、")), time.Now())
+		feeDesc := fmt.Sprintf("人均约 %.2f 元", misc.Cent2Yuan(avgVenueFee+avgBallFee, data.TransactionCents))
+
+		if avgBallFee > 0 {
+			feeDesc += fmt.Sprintf(" (场地 %.2f 元 + 球费 %.2f 元)", misc.Cent2Yuan(avgVenueFee, data.TransactionCents), misc.Cent2Yuan(avgBallFee, data.TransactionCents))
+		}
+
+		msg := venue.Log(user.Name, fmt.Sprintf("[%s] 场地已结束. \n人员：%s\n%s", venue.Desc, strings.Join(list, "、"), feeDesc), time.Now())
 
 		if shard.SettingInstance.Lark.RecordWebhook != "" {
 			recordMsg := map[string]string{
