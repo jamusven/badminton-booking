@@ -304,11 +304,25 @@ func handleVenueLimit(c *gin.Context) {
 
 	msg := venue.Log(user.Name, fmt.Sprintf("更新了场地信息 limit(%d/%d) desc(%s)", amount, limit, desc), time.Now())
 
-	if adjust {
-		venue.NotificationMessage(msg)
+	bookingSummary := data.BookingSummaryByVenueId(venueId)
 
-		bookingSummary := data.BookingSummaryByVenueId(venueId)
+	if adjust {
+		//venue.NotificationMessage(msg)
+
 		bookingSummary.Adjust(venue)
+	}
+
+	var names []string
+	for name, state := range bookingSummary.AnswerValues {
+		if state != data.BookingStateOK {
+			continue
+		}
+
+		names = append(names, name)
+	}
+
+	if len(names) > 0 {
+		go misc.LarkAlert(strings.Join(names, ","), "场地信息更新", msg)
 	}
 
 	c.Redirect(http.StatusMovedPermanently, c.Request.Referer())
@@ -507,7 +521,8 @@ func handleVenueDepart(c *gin.Context) {
 
 	msg := fmt.Sprintf("[%s %s %s %s] 出发通知 by [%s]\n\n名单：%s", venue.Name, venue.Day, misc.GetWeekDay(venue.Day), venue.Desc, user.Name, strings.Join(list, ", "))
 
-	go misc.LarkMarkdown(msg)
+	//go misc.LarkMarkdown(msg)
+	go misc.LarkAlert(strings.Join(list, ","), "出发通知", msg)
 
 	c.Redirect(http.StatusMovedPermanently, c.Request.Referer())
 }

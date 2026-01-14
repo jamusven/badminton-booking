@@ -89,6 +89,18 @@ func LarkMarkdown(msg string) {
 	defer resp.Body.Close()
 }
 
+func LarkAlert(names, title, text string) {
+	if shard.SettingInstance.Lark.AlertWebhook == "" {
+		return
+	}
+
+	Http(shard.SettingInstance.Lark.AlertWebhook, []byte(ToJsonPrettify(map[string]string{
+		"names": names,
+		"title": title,
+		"text":  text,
+	})))
+}
+
 func Wechat(msg string) {
 	if len(shard.SettingInstance.Wechat.Iyuu) <= 0 {
 		return

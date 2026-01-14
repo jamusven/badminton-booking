@@ -72,10 +72,16 @@ func (this *BookingSummary) Adjust(venue *Venue) bool {
 	answerCounter := make(map[BookingState]int)
 
 	for _, booking := range this.Answers {
-		if amount == 0 {
-			break
-		}
+		answerCounter[booking.State]++
 
+		if booking.State == BookingStateNO || booking.State == BookingStateManual {
+			key := booking.getUniqueKey()
+
+			marked[key] = true
+		}
+	}
+
+	for _, booking := range this.Answers {
 		key := booking.getUniqueKey()
 
 		if _, ok := marked[key]; ok {
@@ -83,16 +89,31 @@ func (this *BookingSummary) Adjust(venue *Venue) bool {
 		}
 
 		if booking.State == BookingStateOK {
-			amount--
 			marked[key] = true
 
-			answerCounter[booking.State]++
-		}
+			if amount > 0 {
+				amount--
+			} else {
+				booking.State = BookingStateAuto
 
-		if booking.State == BookingStateNO || booking.State == BookingStateManual {
-			marked[key] = true
+				answerCounter[BookingStateOK]--
+				answerCounter[booking.State]++
 
-			answerCounter[booking.State]++
+				tx := DBGet().Updates(booking)
+
+				if tx.Error != nil {
+					panic(tx.Error)
+				}
+
+				userName := UserFetchById(booking.UserID).GetName(booking.Worker)
+
+				msg := venue.Log(userName, fmt.Sprintf("From %s To %s", BookingStateMap[BookingStateOK], BookingStateMap[booking.State]), time.Now())
+
+				go misc.WechatSingle(userName, msg)
+				go misc.LarkAlert(userName, "开始候补", msg)
+
+				details = append(details, msg)
+			}
 		}
 	}
 
@@ -112,6 +133,7 @@ func (this *BookingSummary) Adjust(venue *Venue) bool {
 			marked[key] = true
 
 			booking.State = BookingStateOK
+			answerCounter[BookingStateAuto]--
 			answerCounter[booking.State]++
 
 			tx := DBGet().Updates(booking)
@@ -125,35 +147,7 @@ func (this *BookingSummary) Adjust(venue *Venue) bool {
 			msg := venue.Log(userName, fmt.Sprintf("From %s To %s", BookingStateMap[BookingStateAuto], BookingStateMap[booking.State]), time.Now())
 
 			go misc.WechatSingle(userName, msg)
-
-			details = append(details, msg)
-		}
-	}
-
-	for _, booking := range this.Answers {
-		key := booking.getUniqueKey()
-
-		if _, ok := marked[key]; ok {
-			continue
-		}
-
-		if booking.State == BookingStateOK {
-			booking.State = BookingStateAuto
-			marked[key] = true
-
-			answerCounter[booking.State]++
-
-			tx := DBGet().Updates(booking)
-
-			if tx.Error != nil {
-				panic(tx.Error)
-			}
-
-			userName := UserFetchById(booking.UserID).GetName(booking.Worker)
-
-			msg := venue.Log(userName, fmt.Sprintf("From %s To %s", BookingStateMap[BookingStateOK], BookingStateMap[booking.State]), time.Now())
-
-			go misc.WechatSingle(userName, msg)
+			go misc.LarkAlert(userName, "候补成功", msg)
 
 			details = append(details, msg)
 		}
@@ -176,19 +170,16 @@ func (this *BookingSummary) Adjust(venue *Venue) bool {
 			if tx.Error != nil {
 				panic(tx.Error)
 			}
+
+			userName := UserFetchById(booking.UserID).GetName(booking.Worker)
+
+			msg := venue.Log(userName, fmt.Sprintf("From %s To %s", BookingStateMap[BookingStateExiting], BookingStateMap[booking.State]), time.Now())
+
+			go misc.WechatSingle(userName, msg)
+			go misc.LarkAlert(userName, "下车成功", msg)
+
+			details = append(details, msg)
 		}
-
-		if booking.State == BookingStateAuto {
-			continue
-		}
-
-		userName := UserFetchById(booking.UserID).GetName(booking.Worker)
-
-		msg := venue.Log(userName, fmt.Sprintf("From %s To %s", BookingStateMap[BookingStateExiting], BookingStateMap[booking.State]), time.Now())
-
-		go misc.WechatSingle(userName, msg)
-
-		details = append(details, msg)
 	}
 
 	if len(details) > 1 {
