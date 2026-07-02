@@ -4,6 +4,7 @@ import (
 	"badminton-booking/badminton/misc"
 	"errors"
 	"fmt"
+	"math/rand"
 	"os"
 	"sort"
 	"time"
@@ -189,7 +190,11 @@ func VenueAutoFill(venue *Venue) {
 			jCount = count
 		}
 
-		return iCount < jCount
+		if iCount != jCount {
+			return iCount < jCount
+		}
+
+		return rand.Intn(2) == 0
 	})
 
 	for index, user := range users {

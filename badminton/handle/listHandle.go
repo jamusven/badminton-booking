@@ -87,7 +87,7 @@ func handleList(c *gin.Context) {
 		return
 	}
 
-	c.HTML(http.StatusOK, "list1.html", h)
+	c.HTML(http.StatusOK, "list.html", h)
 }
 
 func handleLogin(c *gin.Context) {

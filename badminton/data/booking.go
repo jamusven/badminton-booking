@@ -147,7 +147,7 @@ func (this *BookingSummary) Adjust(venue *Venue) bool {
 			msg := venue.Log(userName, fmt.Sprintf("From %s To %s", BookingStateMap[BookingStateAuto], BookingStateMap[booking.State]), time.Now())
 
 			go misc.WechatSingle(userName, msg)
-			go misc.LarkAlert(userName, "候补成功", msg)
+			go misc.LarkAlert(userName, "候补成功 "+userName, msg)
 
 			details = append(details, msg)
 		}
@@ -176,7 +176,7 @@ func (this *BookingSummary) Adjust(venue *Venue) bool {
 			msg := venue.Log(userName, fmt.Sprintf("From %s To %s", BookingStateMap[BookingStateExiting], BookingStateMap[booking.State]), time.Now())
 
 			go misc.WechatSingle(userName, msg)
-			go misc.LarkAlert(userName, "下车成功", msg)
+			go misc.LarkAlert(userName, "下车成功 "+userName, msg)
 
 			details = append(details, msg)
 		}
