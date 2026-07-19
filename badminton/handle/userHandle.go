@@ -9,7 +9,6 @@ import (
 	"gorm.io/gorm"
 	"net/http"
 	"strings"
-	"time"
 )
 
 func init() {
@@ -31,7 +30,7 @@ func handleUserLogin(c *gin.Context) {
 		return
 	}
 
-	ticket := misc.Sha1(fmt.Sprintf("%s%d", name, time.Now().UnixNano()))
+	ticket := user.Ticket()
 
 	data.TicketSet(ticket, user.Name)
 

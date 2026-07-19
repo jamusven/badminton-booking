@@ -1,7 +1,9 @@
 package data
 
 import (
+	"badminton-booking/badminton/misc"
 	"fmt"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -43,6 +45,10 @@ func (this *User) GetName(worker string) string {
 
 func (this *User) IsActive() bool {
 	return this.State != UserStateZombie
+}
+
+func (this *User) Ticket() string {
+	return misc.Sha1(fmt.Sprintf("%s%d", this.Name, time.Now().UnixNano()))
 }
 
 type UserState int
@@ -122,6 +128,8 @@ func UserFetchAll() []*User {
 		user.SaveCache()
 	}
 
+	userTicketsEnsure(users)
+
 	return users
 }
 
@@ -137,4 +145,22 @@ func TicketSet(ticket string, value string) {
 	}
 
 	tickets[ticket] = value
+}
+
+func TicketFetchByName(name string) string {
+	for ticket, ticketName := range tickets {
+		if ticketName == name {
+			return ticket
+		}
+	}
+
+	return ""
+}
+
+func userTicketsEnsure(users []*User) {
+	for _, user := range users {
+		if TicketFetchByName(user.Name) == "" {
+			TicketSet(user.Ticket(), user.Name)
+		}
+	}
 }

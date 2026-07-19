@@ -19,11 +19,49 @@ func init() {
 	r := RouterGet()
 
 	r.GET("/admin", handleAdmin)
+	r.GET("/admin/user/ticket", handleUserTicket)
 	r.POST("/admin/user/create", handleUserCreate)
 	r.POST("/admin/user/feeUpdate", handleFeeUpdate)
 	r.POST("/admin/user/careerPeriodUpdate", handleCareerPeriodUpdate)
 	r.POST("/admin/setting/update", handleSettingUpdate)
 	r.POST("/admin/sql/query", handleSqlQuery)
+}
+
+func handleUserTicket(c *gin.Context) {
+	data.Locker.Lock()
+	defer data.Locker.Unlock()
+
+	ticket := c.Query("ticket")
+
+	if ticket == "" {
+		c.Status(http.StatusServiceUnavailable)
+		return
+	}
+
+	admin := data.UserFetchByTicket(ticket)
+
+	if admin == nil || admin.State != data.UserStateAdmin {
+		c.Status(http.StatusServiceUnavailable)
+		return
+	}
+
+	name := strings.TrimSpace(c.Query("name"))
+
+	if name == "" {
+		c.Status(http.StatusServiceUnavailable)
+		return
+	}
+
+	data.UserFetchAll()
+
+	user := data.UserFetchByName(name)
+
+	if user == nil {
+		c.Status(http.StatusServiceUnavailable)
+		return
+	}
+
+	c.String(http.StatusOK, data.TicketFetchByName(user.Name))
 }
 
 func handleAdmin(c *gin.Context) {
@@ -192,6 +230,7 @@ func handleUserCreate(c *gin.Context) {
 	}
 
 	user.SaveCache()
+	data.TicketSet(user.Ticket(), user.Name)
 
 	c.Redirect(http.StatusMovedPermanently, c.Request.Referer())
 }
