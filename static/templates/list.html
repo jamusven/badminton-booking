@@ -913,7 +913,7 @@
 
                 <div>
                     <label>最大人数:</label>
-                    <input type="number" name="limit" value="${venue.Limit}" min="0" max="20" size="8" >
+                    <input type="number" name="limit" value="${venue.Limit}" min="0" max="100" size="8" >
                 </div>
 
                 <div>
@@ -1202,16 +1202,19 @@
 
             let result = await HttpService.postForm('/venue/booking', formData);
 
-            setTimeout(() => {
-                window.location.reload();
-            }, 1000);
+            if (typeof result === 'string' && result.startsWith('余额不足')) {
+                alert(result);
+                btn.innerText = originalText;
+                return;
+            }
         } catch (error) {
             alert('修改失败，请稍后重试。');
-        } finally {
-            setTimeout(() => {
-                window.location.reload();
-            }, 1000);
+            return;
         }
+
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
     }
 
     currentDayIndex === 0 ? init() : switchTab(currentDayIndex);

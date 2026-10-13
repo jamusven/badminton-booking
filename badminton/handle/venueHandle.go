@@ -96,6 +96,7 @@ func handleVenueBooking(c *gin.Context) {
 	_state := c.PostForm("state")
 	state := data.BookingState(misc.ToINT(_state))
 
+	redirect := true
 	changed := false
 	calculate := false
 	var user *data.User
@@ -125,7 +126,9 @@ func handleVenueBooking(c *gin.Context) {
 			}
 		}
 
-		c.Redirect(http.StatusMovedPermanently, c.Request.Referer())
+		if redirect {
+			c.Redirect(http.StatusMovedPermanently, c.Request.Referer())
+		}
 	}()
 
 	if ticket == "" {
@@ -144,6 +147,12 @@ func handleVenueBooking(c *gin.Context) {
 
 	if venue == nil || venue.State != data.VenueStateRunning {
 		c.Status(http.StatusServiceUnavailable)
+		return
+	}
+
+	if venue.Notification && user.Balance <= 0 {
+		redirect = false
+		c.String(http.StatusOK, fmt.Sprintf("余额不足 当前 %.2f 需要购买额度，才能报名", misc.Cent2Yuan(user.Balance, data.TransactionCents)))
 		return
 	}
 

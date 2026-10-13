@@ -176,6 +176,10 @@ func VenueAutoFill(venue *Venue) {
 			continue
 		}
 
+		if user.Balance <= 0 {
+			continue
+		}
+
 		users = append(users, user)
 	}
 
